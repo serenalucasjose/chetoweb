@@ -1,0 +1,29 @@
+{
+    "name": "chetoweb",
+    "version": "1.0.0",
+    "description": "Sitio oficial de Cheto",
+    "main": "index.html",
+    "scripts": {
+        "start": "webpack-dev-server --open --mode development --config webpack.config.js",
+        "build": "webpack --mode production"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "@babel/core": "^7.24.5",
+        "@babel/preset-env": "^7.24.5",
+        "babel-loader": "^8.3.0",
+        "copy-webpack-plugin": "^12.0.2",
+        "css-loader": "^6.11.0",
+        "file-loader": "^6.2.0",
+        "html-webpack-plugin": "^5.5.0",
+        "node-sass": "^9.0.0",
+        "sass-loader": "^14.2.1",
+        "style-loader": "^3.3.4",
+        "url-loader": "^4.1.1",
+        "webpack": "^5.74.0",
+        "webpack-cli": "^4.10.0",
+        "webpack-dev-server": "^4.9.3"
+    }
+}

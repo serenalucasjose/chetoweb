@@ -1,0 +1,137 @@
+@for $i from 0 through 10 {
+    .p-#{$i} {
+        padding: #{$i * 0.25rem} !important;
+    }
+
+    .pt-#{$i} {
+        padding-top: #{$i * 0.25rem} !important;
+    }
+
+    .pr-#{$i} {
+        padding-right: #{$i * 0.25rem} !important;
+    }
+
+    .pb-#{$i} {
+        padding-bottom: #{$i * 0.25rem} !important;
+    }
+
+    .pl-#{$i} {
+        padding-left: #{$i * 0.25rem} !important;
+    }
+
+    .px-#{$i} {
+        padding-left: #{$i * 0.25rem} !important;
+        padding-right: #{$i * 0.25rem} !important;
+    }
+
+    .py-#{$i} {
+        padding-top: #{$i * 0.25rem} !important;
+        padding-bottom: #{$i * 0.25rem} !important;
+    }
+
+    .m-#{$i} {
+        margin: #{$i * 0.25rem} !important;
+    }
+
+    .mt-#{$i} {
+        margin-top: #{$i * 0.25rem} !important;
+    }
+
+    .mr-#{$i} {
+        margin-right: #{$i * 0.25rem} !important;
+    }
+
+    .mb-#{$i} {
+        margin-bottom: #{$i * 0.25rem} !important;
+    }
+
+    .ml-#{$i} {
+        margin-left: #{$i * 0.25rem} !important;
+    }
+
+    .mx-#{$i} {
+        margin-left: #{$i * 0.25rem} !important;
+        margin-right: #{$i * 0.25rem} !important;
+    }
+
+    .my-#{$i} {
+        margin-top: #{$i * 0.25rem} !important;
+        margin-bottom: #{$i * 0.25rem} !important;
+    }
+}
+
+/* Text sizes */
+.text-xs {
+    font-size: 0.75rem !important; // Extra small text
+}
+
+.text-sm {
+    font-size: 0.875rem !important; // Small text
+}
+
+.text-md {
+    font-size: 1rem !important; // Medium text (base size)
+}
+
+.text-lg {
+    font-size: 1.25rem !important; // Large text
+}
+
+.text-xl {
+    font-size: 1.5rem !important; // Extra large text
+}
+
+.text-2xl {
+    font-size: 1.875rem !important; // 2x large text
+}
+
+.text-3xl {
+    font-size: 2.25rem !important; // 3x large text
+}
+
+.text-4xl {
+    font-size: 3rem !important; // 4x large text
+}
+
+.text-5xl {
+    font-size: 3.75rem !important; // 5x large text
+}
+
+/* Media query for mobile devices */
+@media (max-width: 600px) {
+    .text-xs {
+        font-size: 1rem !important; // Scaling up for mobile
+    }
+
+    .text-sm {
+        font-size: 1.125rem !important;
+    }
+
+    .text-md {
+        font-size: 1.25rem !important;
+    }
+
+    .text-lg {
+        font-size: 1.5rem !important;
+    }
+
+    .text-xl {
+        font-size: 1.75rem !important;
+    }
+
+    .text-2xl {
+        font-size: 2.125rem !important;
+    }
+
+    .text-3xl {
+        font-size: 2.5rem !important;
+    }
+
+    .text-4xl {
+        font-size: 3.5rem !important;
+    }
+
+    .text-5xl {
+        font-size: 4.25rem !important;
+    }
+}

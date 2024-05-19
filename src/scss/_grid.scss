@@ -1,4 +1,6 @@
 .grid-container {
+    position: relative;
+    z-index: 3;
     height: 100%;
     display: grid;
     grid-template-columns: 0.7fr 1.6fr 0.7fr;

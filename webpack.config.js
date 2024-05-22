@@ -1,6 +1,9 @@
 const path = require('path');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
+const TerserWebpackPlugin = require('terser-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CssMinimizerWebpackPlugin = require('css-minimizer-webpack-plugin');
 
 module.exports = {
     entry: './src/js/main.js',
@@ -19,12 +22,16 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './src/index.html',
             filename: 'index.html',
-            chunks: ['index']
+            chunks: ['index'],
+            inject: true
         }),
         new CopyWebpackPlugin({
             patterns: [
                 { from: 'static' }
             ]
+        }),
+        new MiniCssExtractPlugin({
+            filename: 'styles.css'
         })
     ],
     module: {
@@ -32,11 +39,18 @@ module.exports = {
             {
                 test: /\.scss$/,
                 use: [
-                    'style-loader',
+                    MiniCssExtractPlugin.loader, // Replaces 'style-loader'
                     'css-loader',
                     'sass-loader'
                 ],
             },
+        ],
+    },
+    optimization: {
+        minimize: true,
+        minimizer: [
+            new TerserWebpackPlugin(), // Minifies JavaScript
+            new CssMinimizerWebpackPlugin() // Minifies CSS
         ],
     }
 };

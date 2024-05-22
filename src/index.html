@@ -15,7 +15,7 @@
     <link rel="icon" href="icons/favico.ico" type="image/x-icon">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
         rel="stylesheet">
 </head>
 
@@ -23,16 +23,16 @@
     <div class="content">
         <div class="grid-container">
             <div class="logo">
-                <div class="cheto-logo"></div>
+                <img class="cheto-logo" loading="lazy" src="img/cheto-logo-blanco.webp" alt="Cheto logo">
             </div>
             <div class="header"></div>
             <div class="info">
                 <div class="text-center pt-6">
-                    <p class="rubik text-white text-md mb-4">
+                    <p class="rubik text-white text-responsive mb-4">
                         21 de Junio, 2024
                     </p>
                     <div>
-                        <a href="/" class="cta rubik text-white text-md">CONSEGUI TU ENTRADA</a>
+                        <a href="/" class="cta rubik text-white text-responsive">CONSEGUI TU ENTRADA</a>
                     </div>
                 </div>
             </div>
@@ -40,17 +40,17 @@
                 <ul class="social-list">
                     <li class="mx-4">
                         <a href="https://spotify.link/yBlo0vKQHJb" target="_blank"  rel="noopener">
-                            <img src="icons/spotify.svg" class="social-icon" alt="Spotify" />
+                            <img src="icons/spotify.svg" loading="lazy"  class="social-icon" alt="Spotify" width="32"/>
                         </a>
                     </li>
                     <li class="mx-4">
                         <a href="https://www.instagram.com/chetomusica?igsh=NTU1bXM5MDQ1MjIy" rel="noopener" target="_blank">
-                            <img src="icons/instagram.svg" class="social-icon" alt="Instagram" />
+                            <img src="icons/instagram.svg" loading="lazy"  class="social-icon" alt="Instagram" width="32"/>
                         </a>
                     </li>
                     <li class="mx-4">
                         <a href="https://www.youtube.com/watch?v=ZG6v9lF_ZWk" target="_blank" rel="noopener">
-                            <img src="icons/youtube.svg" class="social-icon" alt="Youtube" />
+                            <img src="icons/youtube.svg" loading="lazy" class="social-icon" alt="Youtube" width="32"/>
                         </a>
                     </li>
                 </ul>

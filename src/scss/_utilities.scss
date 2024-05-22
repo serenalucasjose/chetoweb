@@ -60,7 +60,21 @@
     }
 }
 
-/* Text sizes */
+/* Text colors */
+.text-center {
+    text-align: center;
+}
+
+.text-white {
+    color: #f5f6fa; 
+}
+
+/* Text responsive */
+.text-responsive {
+    @include fzlh(18,24);
+}
+
+/* Text fixed sizes */
 .text-xs {
     font-size: 0.75rem !important; // Extra small text
 }

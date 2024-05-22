@@ -1,0 +1,52 @@
+// Extra small devices (phones, 575px and down)
+@media (max-width: 575px) {
+    .cheto-logo {
+        max-width: 70vw;
+    }
+
+    body {
+        background-position-x: 45%;
+    }
+}
+
+// Small devices (tablets, ≥576px)
+@media (min-width: 576px) {
+    .cheto-logo {
+        max-width: 300px;
+    }
+}
+
+// Medium devices (desktops, ≥768px)
+@media (min-width: 768px) {}
+
+// Large devices (large desktops, ≥992px)
+@media (min-width: 992px) {
+    .cheto-logo {
+        max-width: 400px;
+    }
+}
+
+// Extra large devices (extra large screens, ≥1200px)
+@media (min-width: 1200px) {
+    .cheto-logo {
+        max-width: 550px;
+    }
+
+    body {
+        background-color: black;
+        background-position: -25vw center;
+        position: relative;
+
+        &::after {
+            content: "";
+            display: block;
+            position: absolute;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 100vw;
+            background-image: linear-gradient(to right, transparent, black);
+            z-index: 2;
+        }
+    }
+}

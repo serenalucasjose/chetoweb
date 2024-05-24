@@ -1,9 +1,11 @@
 // Extra small devices (phones, 575px and down)
 @media (max-width: 575px) {
+    .styled-dialog {
+        max-width: 75vw;
+    }
     .cheto-logo {
         max-width: 70vw;
     }
-
     body {
         background-position-x: 45%;
     }
@@ -31,7 +33,6 @@
     .cheto-logo {
         max-width: 550px;
     }
-
     body {
         background-color: black;
         background-position: -25vw center;

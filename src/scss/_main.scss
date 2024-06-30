@@ -5,17 +5,47 @@ body {
 }
 
 body {
-  background-image: url('D:/Development/ChetoPagina/static/img/cheto.webp');
-  background-size: cover;
-  background-repeat: no-repeat;
+  /* Image background */
+  // background-image: url('D:/Development/ChetoPagina/static/img/cheto.webp');
+  // background-size: cover;
+  // background-repeat: no-repeat;
   width: 100%;
   background-position: center center;
   height: 100%;
   position: relative;
 }
 
+.video-bg-wrapper {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  #background-video {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    transform: translate(-50%, -50%);
+    z-index: -1;
+  }
+  // Noise overlay
+  &::after {
+    content: "";
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.90);
+  }
+}
+
 .content {
   position: absolute;
+  z-index: 3;
   top: 0;
   left: 0;
   width: 100%;

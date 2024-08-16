@@ -6,42 +6,42 @@ body {
 
 body {
   /* Image background */
-  // background-image: url('D:/Development/ChetoPagina/static/img/cheto.webp');
-  // background-size: cover;
-  // background-repeat: no-repeat;
+  background-image: url('D:/Development/ChetoPagina/static/img/chetovamush.webp');
+  background-size: cover;
+  background-repeat: no-repeat;
   width: 100%;
   background-position: center center;
   height: 100%;
   position: relative;
 }
 
-.video-bg-wrapper {
-  position: relative;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  #background-video {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
-    transform: translate(-50%, -50%);
-    z-index: -1;
-  }
-  // Noise overlay
-  &::after {
-    content: "";
-    width: 100%;
-    height: 100%;
-    position: absolute;
-    top: 0;
-    left: 0;
-    background-color: rgba(0, 0, 0, 0.90);
-  }
-}
+// .video-bg-wrapper {
+//   position: relative;
+//   top: 0;
+//   left: 0;
+//   width: 100%;
+//   height: 100%;
+//   #background-video {
+//     position: absolute;
+//     top: 50%;
+//     left: 50%;
+//     width: 100vw;
+//     height: 100vh;
+//     object-fit: cover;
+//     transform: translate(-50%, -50%);
+//     z-index: -1;
+//   }
+//   // Noise overlay
+//   &::after {
+//     content: "";
+//     width: 100%;
+//     height: 100%;
+//     position: absolute;
+//     top: 0;
+//     left: 0;
+//     background-color: rgba(0, 0, 0, 0.90);
+//   }
+// }
 
 .content {
   position: absolute;
@@ -62,6 +62,9 @@ body {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
+
+  -webkit-filter: drop-shadow(3px 3px 3px #222);
+  filter: drop-shadow(3px 3px 3px #222);
 }
 
 .cta {

@@ -1,5 +1,5 @@
 // Fondo experimental: gaussian splat generado desde la foto del edificio.
-// Se carga aparte (import dinámico) solo si config.background === 'splat'.
+// Se carga aparte (import dinámico) recién cuando se activa el modo 3D desde el logo.
 import * as THREE from 'three';
 import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
 
@@ -17,6 +17,8 @@ export function startSplatBackground(container, opts) {
         faceDolly = 10,    // modo cara: cuánto se acerca la cámara al acercar la cara
         faceZoom = 1.25,   // modo cara: zoom extra para tapar los bordes del splat
         onReady = () => {},
+        onProgress = () => {},
+        onError = () => {},
     } = opts;
 
     const canvas = document.createElement('canvas');
@@ -33,7 +35,10 @@ export function startSplatBackground(container, opts) {
 
     // SHARP usa coordenadas OpenCV (y hacia abajo, z hacia adelante).
     // Girar 180° en X lo pasa a three.js: la escena queda delante de la cámara (-z).
-    const splat = new SplatMesh({ url });
+    const splat = new SplatMesh({
+        url,
+        onProgress: e => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); },
+    });
     splat.quaternion.set(1, 0, 0, 0);
     scene.add(splat);
 
@@ -72,7 +77,7 @@ export function startSplatBackground(container, opts) {
         pointer.y = (e.clientY / innerHeight - .5) * 2;
     });
 
-    renderer.setAnimationLoop(t => {
+    const loop = t => {
         let want;
         if (head) {
             // Efecto "ventana": la cámara sigue a la cabeza con mucha amplitud
@@ -98,12 +103,19 @@ export function startSplatBackground(container, opts) {
         camera.position.set(cur.x, cur.y, cur.z);
         camera.lookAt(target);
         renderer.render(scene, camera);
-    });
+    };
+    renderer.setAnimationLoop(loop);
 
-    splat.initialized.then(() => onReady()).catch(err => console.error('Splat:', err));
-
-    return {
+    const ctl = {
+        ready: false,
         // { x, y, z } desde face-track.js, o null para volver al mouse
         setHead(h) { head = h; },
+        // Al salir del modo 3D se deja de renderizar (no consume GPU)
+        pause() { renderer.setAnimationLoop(null); },
+        resume() { renderer.setAnimationLoop(loop); },
     };
+    splat.initialized
+        .then(() => { ctl.ready = true; onReady(); })
+        .catch(err => { console.error('Splat:', err); onError(err); });
+    return ctl;
 }

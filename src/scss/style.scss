@@ -133,6 +133,67 @@ a[aria-disabled='true'] { cursor: default; }
 
 .stage.is-splat-ready .bg__splat { opacity: 1; }
 
+// Easter egg: el logo es clickeable pero sin pistas visuales
+.mark[role='button'] { cursor: default; outline: none; }
+.mark[role='button']:focus-visible { outline: 1px solid rgba(240, 240, 240, .5); outline-offset: 12px; }
+
+/* ---------- Modal del modo 3D ---------- */
+
+.splat-modal__panel { max-width: 560px; }
+
+.splat-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.splat-steps__item {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 14px clamp(20px, 3vw, 32px);
+    border-bottom: 1px solid rgba(240, 240, 240, .08);
+}
+
+.splat-steps__text { font-size: 15px; font-weight: 300; line-height: 1.45; text-wrap: pretty; }
+
+// Pasos según el dispositivo: mouse o táctil, y con o sin cámara
+.splat-steps__item--touch { display: none; }
+.is-touch {
+    .splat-steps__item--mouse { display: none; }
+    .splat-steps__item--touch { display: flex; }
+}
+.no-camera {
+    .splat-steps__item--cam, .splat-modal__cam { display: none; }
+}
+
+.splat-steps__n-last::before { content: '02'; }
+.stage:not(.no-camera) .splat-steps__n-last::before { content: '03'; }
+
+.splat-modal__foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 14px 20px;
+    padding: 18px clamp(20px, 3vw, 32px);
+}
+
+.splat-modal__status {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: #8A8787;
+
+    &[data-state='ready'] { color: $fg; }
+    &[data-state='error'] { color: $red; }
+}
+
+.splat-modal__actions { display: flex; gap: 10px; margin-left: auto; }
+
 /* ---------- Paletas ---------- */
 
 .palettes { position: absolute; inset: 0; pointer-events: none; opacity: var(--overlay); }

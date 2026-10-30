@@ -19,28 +19,57 @@ export function startSplatBackground(container, opts) {
         onReady = () => {},
         onProgress = () => {},
         onError = () => {},
+        lowPower = false,  // celulares: menos resolución, 30 fps y menos reordenamientos
+        onSlow = null,     // se llama una vez si, ya cargado, va lento (para bajar de calidad)
     } = opts;
 
     const canvas = document.createElement('canvas');
     canvas.className = 'bg__splat';
     container.appendChild(canvas);
+    // iOS libera el contexto WebGL cuando le falta memoria: se avisa para volver a los videos
+    canvas.addEventListener('webglcontextlost', e => {
+        e.preventDefault();
+        renderer.setAnimationLoop(null);
+        onError('context-lost');
+    });
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // Los splats son difusos: en celulares renderizar a menos resolución casi no se nota
+    renderer.setPixelRatio(lowPower ? Math.min(window.devicePixelRatio, 1) : Math.min(window.devicePixelRatio, 1.5));
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0B0A0A);
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
-    scene.add(new SparkRenderer({ renderer }));
+    const spark = new SparkRenderer({ renderer, ...(lowPower ? { minSortIntervalMs: 66 } : {}) });
+    scene.add(spark);
 
     // SHARP usa coordenadas OpenCV (y hacia abajo, z hacia adelante).
     // Girar 180° en X lo pasa a three.js: la escena queda delante de la cámara (-z).
-    const splat = new SplatMesh({
+    let splat = new SplatMesh({
         url,
         onProgress: e => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); },
     });
     splat.quaternion.set(1, 0, 0, 0);
     scene.add(splat);
+
+    // Medición de fluidez: después de cargar, mira ~2 s de frames; si la mediana
+    // supera 45 ms (menos de ~22 fps) avisa una sola vez con onSlow.
+    let perf = null;
+    let slowCb = onSlow;
+    function watchPerf() {
+        if (!slowCb) return;
+        perf = { start: performance.now() + 1000, deltas: [], last: null };
+    }
+    function trackPerf(t) {
+        if (!perf || t < perf.start) return;
+        if (perf.last !== null) perf.deltas.push(t - perf.last);
+        perf.last = t;
+        if (t - perf.start < 2000) return;
+        const d = perf.deltas.sort((a, b) => a - b);
+        const median = d[d.length >> 1] || 0;
+        perf = null;
+        if (median > 45 && slowCb) { const cb = slowCb; slowCb = null; cb(median); }
+    }
 
     // Encuadre tipo "cover": la foto llena la pantalla sin deformarse, como object-fit: cover.
     const halfV = Math.atan(PHOTO.h / 2 / PHOTO.focal);
@@ -62,7 +91,8 @@ export function startSplatBackground(container, opts) {
         updateFov();
         renderer.setSize(w, h, false);
     }
-    new ResizeObserver(resize).observe(container);
+    const ro = new ResizeObserver(resize);
+    ro.observe(container);
     resize();
 
     // Parallax: la cámara se desplaza con el mouse (suavizado) y sigue mirando al edificio.
@@ -72,12 +102,19 @@ export function startSplatBackground(container, opts) {
     const cur = { x: 0, y: 0, z: 0 };
     let head = null; // posición de la cara cuando el seguimiento por webcam está activo
     const touch = matchMedia('(hover: none)').matches;
-    addEventListener('pointermove', e => {
+    const onPointer = e => {
         pointer.x = (e.clientX / innerWidth - .5) * 2;
         pointer.y = (e.clientY / innerHeight - .5) * 2;
-    });
+    };
+    addEventListener('pointermove', onPointer);
 
+    // En celulares se dibuja como mucho a 30 fps: alcanza para un movimiento lento
+    const frameMs = lowPower ? 1000 / 30 - 2 : 0;
+    let lastFrame = -Infinity;
     const loop = t => {
+        trackPerf(t);
+        if (t - lastFrame < frameMs) return;
+        lastFrame = t;
         let want;
         if (head) {
             // Efecto "ventana": la cámara sigue a la cabeza con mucha amplitud
@@ -111,11 +148,32 @@ export function startSplatBackground(container, opts) {
         // { x, y, z } desde face-track.js, o null para volver al mouse
         setHead(h) { head = h; },
         // Al salir del modo 3D se deja de renderizar (no consume GPU)
-        pause() { renderer.setAnimationLoop(null); },
+        pause() { renderer.setAnimationLoop(null); perf = null; },
+        // Libera todo (GPU, canvas, listeners) para poder empezar de cero
+        destroy() {
+            renderer.setAnimationLoop(null);
+            ro.disconnect();
+            removeEventListener('pointermove', onPointer);
+            // Primero Spark: así descarta los ordenamientos que quedaron en curso
+            try { spark.dispose(); } catch (e) { /* ya liberado */ }
+            try { splat.dispose(); } catch (e) { /* ya liberado */ }
+            renderer.dispose();
+            canvas.remove();
+        },
         resume() { renderer.setAnimationLoop(loop); },
+        // Reemplaza el splat por otro archivo (p. ej. uno más liviano) sin cortar el render
+        async load(newUrl) {
+            const next = new SplatMesh({ url: newUrl });
+            next.quaternion.set(1, 0, 0, 0);
+            await next.initialized;
+            scene.add(next);
+            scene.remove(splat);
+            splat.dispose();
+            splat = next;
+        },
     };
     splat.initialized
-        .then(() => { ctl.ready = true; onReady(); })
-        .catch(err => { console.error('Splat:', err); onError(err); });
+        .then(() => { ctl.ready = true; onReady(); watchPerf(); })
+        .catch(err => { console.error('Splat:', err); onError('load'); });
     return ctl;
 }

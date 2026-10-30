@@ -25,6 +25,9 @@ gaussian splat del edificio con parallax 3D, y opcionalmente sigue la cara por w
 
 - Splat: `static/splat/cheto-full.spz`, generado con [SHARP](https://github.com/apple-aiml-research/ml-sharp)
   desde `1ST FULL.jpg` y comprimido con `@playcanvas/splat-transform`.
+- En pantallas táctiles se carga `cheto-mobile.spz` (350 mil gaussianas, con `--decimate-adaptive`)
+  con render más liviano; si aun así va lento, pasa sola a `cheto-mobile-lite.spz` (200 mil).
+  `?splat=full|mobile|lite` fuerza una versión para probar.
 - Visor: [Spark](https://sparkjs.dev) (`src/js/splat-bg.js`). Cara: MediaPipe (`src/js/face-track.js`).
 - Se activa/desactiva con `splatEasterEgg` y `faceTracking` en `src/js/config.js`.
 

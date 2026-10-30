@@ -9,7 +9,10 @@ module.exports = (env, argv) => ({
     entry: './src/js/main.js',
     mode: 'production',
     output: {
-        filename: '[name].bundle.js',
+        // Hash del contenido en el nombre: cada deploy genera archivos nuevos y el CDN
+        // no puede servir JS/CSS viejos junto con el HTML nuevo.
+        filename: '[name].[contenthash:8].js',
+        chunkFilename: '[name].[contenthash:8].js',
         path: path.resolve(__dirname, 'dist'),
         clean: true,
     },
@@ -33,7 +36,7 @@ module.exports = (env, argv) => ({
             ]
         }),
         new MiniCssExtractPlugin({
-            filename: 'styles.css'
+            filename: 'styles.[contenthash:8].css'
         })
     ],
     module: {

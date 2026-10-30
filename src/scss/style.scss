@@ -116,6 +116,23 @@ a[aria-disabled='true'] { cursor: default; }
 
 .is-hover .bg { filter: brightness(1.3) saturate(1.4); }
 
+/* ---------- Fondo experimental: splat ---------- */
+
+// El canvas 3D ya tiene su propio parallax: la capa del fondo no se mueve por CSS
+.stage.is-splat .bg { inset: 0; transform: none; }
+
+.bg__splat {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+}
+
+.stage.is-splat-ready .bg__splat { opacity: 1; }
+
 /* ---------- Paletas ---------- */
 
 .palettes { position: absolute; inset: 0; pointer-events: none; opacity: var(--overlay); }

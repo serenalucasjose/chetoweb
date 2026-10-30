@@ -8,6 +8,7 @@ const stage = $('#stage');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let hovering = false;
+let splatReady = false;
 
 /* ---------- Contenido desde config ---------- */
 
@@ -120,6 +121,7 @@ function buildTracks() {
 
 // Solo los videos del fondo principal; el del hover del disco se maneja aparte
 function kickVideos() {
+    if (splatReady) return;
     $$('.bg video', stage).forEach(v => {
         v.muted = true;
         if (v.paused) v.play().catch(() => {});
@@ -288,11 +290,31 @@ function closeRemix() {
     if (lastFocus) lastFocus.focus();
 }
 
+/* ---------- Fondo experimental: gaussian splat ---------- */
+
+// Se carga en un bundle aparte, solo si está activado. Mientras carga (o si falla)
+// se siguen viendo los videos.
+function startSplat() {
+    if (config.background !== 'splat' || !config.splatUrl) return;
+    stage.classList.add('is-splat');
+    import(/* webpackChunkName: "splat" */ './splat-bg.js')
+        .then(({ startSplatBackground }) => startSplatBackground($('#bg'), {
+            url: config.splatUrl,
+            onReady: () => {
+                splatReady = true;
+                stage.classList.add('is-splat-ready');
+                setTimeout(() => $$('.bg video', stage).forEach(v => v.pause()), 1500);
+            },
+        }))
+        .catch(err => console.error('No se pudo cargar el fondo 3D:', err));
+}
+
 /* ---------- Init ---------- */
 
 function init() {
     applyContent();
     buildBackground();
+    startSplat();
     buildTracks();
     applyPalette(false);
     kickVideos();

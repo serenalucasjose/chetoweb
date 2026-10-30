@@ -5,7 +5,7 @@ const TerserWebpackPlugin = require('terser-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CssMinimizerWebpackPlugin = require('css-minimizer-webpack-plugin');
 
-module.exports = {
+module.exports = (env, argv) => ({
     entry: './src/js/main.js',
     mode: 'production',
     output: {
@@ -26,7 +26,12 @@ module.exports = {
         }),
         new CopyWebpackPlugin({
             patterns: [
-                { from: 'static' }
+                {
+                    from: 'static',
+                    // Los splats de SHARP son solo para pruebas locales (licencia de investigación):
+                    // nunca van al build de producción que se publica.
+                    globOptions: { ignore: argv.mode === 'production' ? ['**/splat/**'] : [] },
+                }
             ]
         }),
         new MiniCssExtractPlugin({
@@ -55,4 +60,4 @@ module.exports = {
             new CssMinimizerWebpackPlugin() // Minifies CSS
         ],
     }
-};
+});

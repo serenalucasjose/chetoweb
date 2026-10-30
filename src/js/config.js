@@ -8,6 +8,11 @@ export default {
     effects: 'suave',        // intensidad del ruido de TV (grano/scanlines): 'suave' | 'medio' | 'fuerte'
     glitch: true,            // glitch periódico sobre el logo
 
+    // Fondo experimental: 'splat' muestra el gaussian splat (los videos quedan de respaldo);
+    // 'video' usa solo los videos.
+    background: 'splat',
+    splatUrl: 'splat/cheto-full.ply', // generado con SHARP: solo para pruebas locales, no se versiona
+
     // Video de fondo
     videoLayout: 'triptych', // 'single' (1 video 16:9) | 'triptych' (3 videos 9:16)
     videos: [                // en mobile se muestra solo el del medio

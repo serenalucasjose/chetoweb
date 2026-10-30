@@ -157,45 +157,45 @@ function albumOff() {
 
 /* ---------- Parallax ---------- */
 
+// Se aplica como mucho una vez por frame y solo en las capas que se mueven,
+// para no recalcular los estilos de toda la página en cada evento del mouse.
+const parallaxEls = [$('#bg'), $('.hero')];
+let pointer = null;
+
 function onPointerMove(e) {
-    stage.style.setProperty('--mx', (e.clientX / innerWidth - .5) * 2);
-    stage.style.setProperty('--my', (e.clientY / innerHeight - .5) * 2);
+    if (!pointer) requestAnimationFrame(applyParallax);
+    pointer = e;
 }
 
-/* ---------- Grano + blobs ---------- */
+function applyParallax() {
+    const mx = (pointer.clientX / innerWidth - .5) * 2;
+    const my = (pointer.clientY / innerHeight - .5) * 2;
+    parallaxEls.forEach(el => {
+        el.style.setProperty('--mx', mx);
+        el.style.setProperty('--my', my);
+    });
+    pointer = null;
+}
 
-function startGrain() {
-    const c = $('#grain');
+/* ---------- Grano ---------- */
+
+// La textura de ruido se genera una sola vez. La animación (saltos de posición)
+// la hace CSS sobre transform, que corre en la GPU y no depende del hilo de JS.
+function makeGrain() {
+    const c = document.createElement('canvas');
     const w = 220, h = 140;
     c.width = w;
     c.height = h;
     const ctx = c.getContext('2d');
     const img = ctx.createImageData(w, h);
-    const blobs = $$('[data-blob]', stage);
-    let f = 0;
-
-    const drawNoise = () => {
-        const d = img.data;
-        for (let i = 0; i < d.length; i += 4) {
-            const v = Math.random() * 255 | 0;
-            d[i] = d[i + 1] = d[i + 2] = v;
-            d[i + 3] = 255;
-        }
-        ctx.putImageData(img, 0, 0);
-    };
-
-    if (reduceMotion) { drawNoise(); return; }
-
-    const tick = () => {
-        const t = performance.now() / 1000;
-        blobs.forEach(b => {
-            const k = +b.dataset.blob + 1;
-            b.style.transform = `translate3d(${Math.sin(t * .11 * k + k) * 12}vw, ${Math.cos(t * .08 * k + k * 2) * 10}vh, 0) scale(${1 + Math.sin(t * .2 + k) * .12})`;
-        });
-        if (f++ % 3 === 0) drawNoise();
-        requestAnimationFrame(tick);
-    };
-    tick();
+    const d = img.data;
+    for (let i = 0; i < d.length; i += 4) {
+        const v = Math.random() * 255 | 0;
+        d[i] = d[i + 1] = d[i + 2] = v;
+        d[i + 3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    stage.style.setProperty('--noise', `url(${c.toDataURL('image/png')})`);
 }
 
 /* ---------- Glitch del logo ---------- */
@@ -268,7 +268,7 @@ function init() {
     buildTracks();
     applyPalette(false);
     kickVideos();
-    startGrain();
+    makeGrain();
 
     // Entrada del logo y del disco
     setTimeout(() => stage.classList.add('is-ready'), 250);

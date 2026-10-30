@@ -3,8 +3,8 @@
 
 export default {
     // Look
-    palette: 'violeta',      // 'violeta' | 'fuego' | 'noche' | 'ninguno'
-    overlay: .65,            // opacidad del degradé de color sobre el video (0 a 1)
+    palette: 'violeta',      // degradé al pasar el mouse por links: 'violeta' | 'fuego' | 'noche' | 'ninguno'
+    overlay: .65,            // opacidad de ese degradé (0 a 1)
     effects: 'suave',        // intensidad del ruido de TV (grano/scanlines): 'suave' | 'medio' | 'fuerte'
     glitch: true,            // glitch periódico sobre el logo
 

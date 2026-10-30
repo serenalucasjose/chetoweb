@@ -5,12 +5,9 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 const stage = $('#stage');
-const mobileMQ = matchMedia('(max-width: 959.98px)');
-const isTouch = matchMedia('(hover: none)').matches;
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let hovering = false;
-let cycAlt = false;
 
 /* ---------- Contenido desde config ---------- */
 
@@ -123,11 +120,10 @@ function kickVideos() {
 
 /* ---------- Paletas ---------- */
 
-const basePal = () => config.palette || 'violeta';
-const altPal = () => (basePal() === 'fuego' ? 'violeta' : 'fuego');
-
-function applyPalette(alt) {
-    const want = alt ? altPal() : basePal();
+// El degradé de color solo aparece mientras el mouse está sobre un link o botón;
+// el resto del tiempo se ven los videos a color con el ruido encima.
+function applyPalette(on) {
+    const want = on ? config.palette : null;
     $$('[data-pal]', stage).forEach(el => el.classList.toggle('is-active', el.dataset.pal === want));
 }
 
@@ -288,13 +284,6 @@ function init() {
     $('#remix-close').addEventListener('click', closeRemix);
     remix.addEventListener('click', e => { if (e.target === remix) closeRemix(); });
     addEventListener('keydown', e => { if (e.key === 'Escape' && !remix.hidden) closeRemix(); });
-
-    // En touch / mobile no hay hover: la paleta alterna sola
-    setInterval(() => {
-        if (!(isTouch || mobileMQ.matches) || hovering) return;
-        cycAlt = !cycAlt;
-        applyPalette(cycAlt);
-    }, 6000);
 
     setInterval(kickVideos, 1500);
 

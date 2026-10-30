@@ -1,5 +1,5 @@
-// Fondo experimental: gaussian splat generado desde la foto del edificio.
-// Se carga aparte (import dinámico) recién cuando se activa el modo 3D desde el logo.
+// Fondo del modo 3D: gaussian splat generado desde la foto del edificio.
+// Se carga aparte (import dinámico) recién cuando se activa el modo 3D desde el símbolo.
 import * as THREE from 'three';
 import { SparkRenderer, SplatMesh } from '@sparkjsdev/spark';
 
@@ -10,17 +10,21 @@ const PHOTO = { w: 3333, h: 5000, focal: 3333.23 };
 export function startSplatBackground(container, opts) {
     const {
         url,
-        focusDist = 25,  // distancia al edificio (unidades de la escena) hacia donde mira la cámara
-        parallax = 1.2,  // cuánto se mueve la cámara con el mouse
-        zoom = 1.08,     // margen para que el parallax no muestre los bordes del splat
-        faceParallax = 6,  // modo cara: desplazamiento de cámara (bien exagerado)
-        faceDolly = 10,    // modo cara: cuánto se acerca la cámara al acercar la cara
-        faceZoom = 1.25,   // modo cara: zoom extra para tapar los bordes del splat
+        focusDist = 25,      // distancia al edificio (unidades de la escena) hacia donde mira la cámara
+        parallax = 1.2,      // desktop: cuánto se mueve la cámara con el mouse
+        zoom = 1.08,         // desktop: margen para que el parallax no muestre los bordes del splat
+        mobileParallax = 3.2, // celulares: amplitud del vaivén / inclinación (bien exagerada)
+        mobileDolly = 4,     // celulares: cuánto se acerca y aleja la cámara en el vaivén
+        mobileZoom = 1.22,   // celulares: zoom extra para tapar los bordes con tanto movimiento
+        faceParallax = 6,    // modo cara: desplazamiento de cámara (bien exagerado)
+        faceDolly = 10,      // modo cara: cuánto se acerca la cámara al acercar la cara
+        faceZoom = 1.25,     // modo cara: zoom extra para tapar los bordes del splat
         onReady = () => {},
         onProgress = () => {},
         onError = () => {},
-        lowPower = false,  // celulares: menos resolución, 30 fps y menos reordenamientos
-        onSlow = null,     // se llama una vez si, ya cargado, va lento (para bajar de calidad)
+        lowPower = false,    // celulares: menos resolución, 30 fps y menos reordenamientos
+        quality = {},        // ajustes finos (también se pueden forzar por URL para probar): dpr, fps, std
+        onSlow = null,       // si ni bajando la resolución alcanza, se llama una vez (para usar un splat más liviano)
     } = opts;
 
     const canvas = document.createElement('canvas');
@@ -34,13 +38,25 @@ export function startSplatBackground(container, opts) {
     });
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-    // Los splats son difusos: en celulares renderizar a menos resolución casi no se nota
-    renderer.setPixelRatio(lowPower ? Math.min(window.devicePixelRatio, 1) : Math.min(window.devicePixelRatio, 1.5));
+    const q = {
+        dpr: lowPower ? Math.min(window.devicePixelRatio, 1) : Math.min(window.devicePixelRatio, 1.5),
+        fps: lowPower ? 30 : 0,               // 0 = sin tope
+        // Hasta cuántos desvíos se dibuja cada gaussiana. Spark usa 2,83 por defecto; con 2,0
+        // se pinta la mitad de superficie sin diferencia visible (medido: +75% de fps en GPU).
+        std: lowPower ? 1.8 : 2.0,
+        ...quality,
+    };
+    const adaptive = quality.dpr === undefined; // con dpr forzado por URL no se adapta (para medir)
+    renderer.setPixelRatio(q.dpr);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0B0A0A);
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
-    const spark = new SparkRenderer({ renderer, ...(lowPower ? { minSortIntervalMs: 66 } : {}) });
+    const spark = new SparkRenderer({
+        renderer,
+        maxStdDev: q.std,
+        ...(lowPower ? { minSortIntervalMs: 66 } : {}),
+    });
     scene.add(spark);
 
     // SHARP usa coordenadas OpenCV (y hacia abajo, z hacia adelante).
@@ -52,29 +68,11 @@ export function startSplatBackground(container, opts) {
     splat.quaternion.set(1, 0, 0, 0);
     scene.add(splat);
 
-    // Medición de fluidez: después de cargar, mira ~2 s de frames; si la mediana
-    // supera 45 ms (menos de ~22 fps) avisa una sola vez con onSlow.
-    let perf = null;
-    let slowCb = onSlow;
-    function watchPerf() {
-        if (!slowCb) return;
-        perf = { start: performance.now() + 1000, deltas: [], last: null };
-    }
-    function trackPerf(t) {
-        if (!perf || t < perf.start) return;
-        if (perf.last !== null) perf.deltas.push(t - perf.last);
-        perf.last = t;
-        if (t - perf.start < 2000) return;
-        const d = perf.deltas.sort((a, b) => a - b);
-        const median = d[d.length >> 1] || 0;
-        perf = null;
-        if (median > 45 && slowCb) { const cb = slowCb; slowCb = null; cb(median); }
-    }
-
     // Encuadre tipo "cover": la foto llena la pantalla sin deformarse, como object-fit: cover.
     const halfV = Math.atan(PHOTO.h / 2 / PHOTO.focal);
     const halfH = Math.atan(PHOTO.w / 2 / PHOTO.focal);
-    let zoomCur = zoom;
+    const baseZoom = lowPower ? mobileZoom : zoom;
+    let zoomCur = baseZoom;
     let aspect = 1;
     function updateFov() {
         const half = aspect > PHOTO.w / PHOTO.h
@@ -90,17 +88,56 @@ export function startSplatBackground(container, opts) {
         aspect = w / h;
         updateFov();
         renderer.setSize(w, h, false);
+        dirty = REDRAW_FRAMES;
     }
     const ro = new ResizeObserver(resize);
-    ro.observe(container);
-    resize();
 
-    // Parallax: la cámara se desplaza con el mouse (suavizado) y sigue mirando al edificio.
-    // En pantallas táctiles hace un vaivén lento.
+    /* ---------- Resolución adaptativa ---------- */
+
+    // Si no llega a la fluidez esperada, baja la resolución interna de a un escalón
+    // (los splats son difusos: casi no se nota). Si en el último escalón sigue lento,
+    // avisa con onSlow (para pasar a un splat más liviano).
+    const ladder = [q.dpr, ...(lowPower ? [.85, .7, .6] : [1.25, 1, .85]).filter(v => v < q.dpr - .01)];
+    let level = 0;
+    const slowMs = lowPower ? 40 : 28;      // mediana entre frames dibujados que se considera lenta
+    let gov = null;
+    let slowCb = onSlow;
+    function startGovernor(delay = 1000) {
+        if (!adaptive) return;
+        gov = { from: performance.now() + delay, gaps: [], last: null };
+    }
+    function trackRender(t) {
+        if (!gov || t < gov.from) return;
+        if (gov.last !== null) gov.gaps.push(t - gov.last);
+        gov.last = t;
+        if (gov.gaps.length < 45) return;
+        const g = gov.gaps.sort((a, b) => a - b);
+        const median = g[g.length >> 1];
+        gov = null;
+        if (median <= slowMs) return;                 // va bien: deja de medir
+        if (level < ladder.length - 1) {
+            level++;
+            renderer.setPixelRatio(ladder[level]);
+            resize();
+            console.info(`Modo 3D: ${Math.round(median)} ms por frame, resolución ${ladder[level]}x`);
+            startGovernor(800);
+        } else if (slowCb) {
+            const cb = slowCb; slowCb = null;
+            cb(median);
+        }
+    }
+    function noteSkipped() { if (gov) gov.last = null; } // frames sin dibujar no cuentan
+
+    /* ---------- Movimiento de cámara ---------- */
+
+    // Desktop: la cámara sigue al mouse. Celulares: vaivén amplio automático, o la inclinación
+    // del teléfono si hay permiso. Con la cámara web activa, sigue a la cabeza.
     const target = new THREE.Vector3(0, 0, -focusDist);
     const pointer = { x: 0, y: 0 };
     const cur = { x: 0, y: 0, z: 0 };
-    let head = null; // posición de la cara cuando el seguimiento por webcam está activo
+    let head = null;   // { x, y, z } desde face-track.js
+    let tilt = null;   // { x, y } desde la inclinación del teléfono
+    let frozen = false; // con el modal abierto la cámara se queda quieta (el desenfoque es caro)
     const touch = matchMedia('(hover: none)').matches;
     const onPointer = e => {
         pointer.x = (e.clientX / innerWidth - .5) * 2;
@@ -108,47 +145,72 @@ export function startSplatBackground(container, opts) {
     };
     addEventListener('pointermove', onPointer);
 
-    // En celulares se dibuja como mucho a 30 fps: alcanza para un movimiento lento
-    const frameMs = lowPower ? 1000 / 30 - 2 : 0;
-    let lastFrame = -Infinity;
-    const loop = t => {
-        trackPerf(t);
-        if (t - lastFrame < frameMs) return;
-        lastFrame = t;
-        let want;
-        if (head) {
-            // Efecto "ventana": la cámara sigue a la cabeza con mucha amplitud
-            want = { x: head.x * faceParallax, y: head.y * faceParallax * .7, z: -head.z * faceDolly };
-        } else {
-            if (touch) {
-                pointer.x = Math.sin(t / 4000) * .6;
-                pointer.y = Math.cos(t / 5300) * .4;
-            }
-            want = { x: pointer.x * parallax, y: -pointer.y * parallax * .6, z: 0 };
+    function wanted(t) {
+        if (head) return { x: head.x * faceParallax, y: head.y * faceParallax * .7, z: -head.z * faceDolly };
+        if (tilt) return { x: tilt.x * mobileParallax, y: tilt.y * mobileParallax * .8, z: Math.sin(t / 5100) * mobileDolly * .5 };
+        if (touch || lowPower) {
+            return {
+                x: Math.sin(t / 2800) * mobileParallax,
+                y: Math.cos(t / 3700) * mobileParallax * .7,
+                z: Math.sin(t / 5100) * mobileDolly,
+            };
         }
-        const k = head ? .15 : .05;
-        cur.x += (want.x - cur.x) * k;
-        cur.y += (want.y - cur.y) * k;
-        cur.z += (want.z - cur.z) * k;
+        return { x: pointer.x * parallax, y: -pointer.y * parallax * .6, z: 0 };
+    }
 
-        const wantZoom = head ? faceZoom : zoom;
+    /* ---------- Loop: solo dibuja si algo cambió ---------- */
+
+    // Con la cámara quieta no se redibuja (desktop con el mouse quieto: la GPU descansa).
+    // Después de moverse se dibujan unos frames más para que Spark termine de ordenar.
+    const REDRAW_FRAMES = 45;
+    let dirty = REDRAW_FRAMES;
+    const frameMs = q.fps ? 1000 / q.fps - 2 : 0;
+    let lastFrame = -Infinity;
+    let freezeT = 0;
+
+    const loop = now => {
+        // Con el modal abierto el tiempo del vaivén no avanza, así al cerrar sigue desde ahí
+        const t = now - freezeT;
+        if (frozen) { freezeT += now - (loop.prev ?? now); }
+        loop.prev = now;
+
+        if (!frozen) {
+            const want = wanted(t);
+            const k = head ? .15 : tilt ? .12 : .05;
+            const dx = (want.x - cur.x) * k, dy = (want.y - cur.y) * k, dz = (want.z - cur.z) * k;
+            cur.x += dx; cur.y += dy; cur.z += dz;
+            // Menos de ~1/1000 de unidad por frame es menos de un décimo de píxel: cuenta como quieta
+            if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) > 1e-3) dirty = REDRAW_FRAMES;
+        }
+        const wantZoom = head ? faceZoom : baseZoom;
         if (Math.abs(wantZoom - zoomCur) > .001) {
             zoomCur += (wantZoom - zoomCur) * .05;
             updateFov();
+            dirty = REDRAW_FRAMES;
         }
 
+        if (dirty <= 0 || now - lastFrame < frameMs) { if (dirty <= 0) noteSkipped(); return; }
+        dirty--;
+        lastFrame = now;
+        trackRender(now);
         camera.position.set(cur.x, cur.y, cur.z);
         camera.lookAt(target);
         renderer.render(scene, camera);
     };
+
+    ro.observe(container);
+    resize();
     renderer.setAnimationLoop(loop);
 
     const ctl = {
         ready: false,
-        // { x, y, z } desde face-track.js, o null para volver al mouse
         setHead(h) { head = h; },
+        setTilt(v) { tilt = v; },
+        // Con el modal abierto: cámara quieta, así el fondo desenfocado no se recalcula cada frame
+        freeze(on) { frozen = on; if (!on) dirty = REDRAW_FRAMES; },
         // Al salir del modo 3D se deja de renderizar (no consume GPU)
-        pause() { renderer.setAnimationLoop(null); perf = null; },
+        pause() { renderer.setAnimationLoop(null); gov = null; },
+        resume() { dirty = REDRAW_FRAMES; renderer.setAnimationLoop(loop); if (ctl.ready) startGovernor(); },
         // Libera todo (GPU, canvas, listeners) para poder empezar de cero
         destroy() {
             renderer.setAnimationLoop(null);
@@ -160,7 +222,6 @@ export function startSplatBackground(container, opts) {
             renderer.dispose();
             canvas.remove();
         },
-        resume() { renderer.setAnimationLoop(loop); },
         // Reemplaza el splat por otro archivo (p. ej. uno más liviano) sin cortar el render
         async load(newUrl) {
             const next = new SplatMesh({ url: newUrl });
@@ -170,10 +231,11 @@ export function startSplatBackground(container, opts) {
             scene.remove(splat);
             splat.dispose();
             splat = next;
+            dirty = REDRAW_FRAMES;
         },
     };
     splat.initialized
-        .then(() => { ctl.ready = true; onReady(); watchPerf(); })
+        .then(() => { ctl.ready = true; dirty = REDRAW_FRAMES; onReady(); startGovernor(); })
         .catch(err => { console.error('Splat:', err); onError('load'); });
     return ctl;
 }

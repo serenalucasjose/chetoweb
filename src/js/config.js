@@ -8,6 +8,12 @@ export default {
     effects: 'suave',        // intensidad del ruido de TV (grano/scanlines): 'suave' | 'medio' | 'fuerte'
     glitch: true,            // glitch periódico sobre el logo
 
+    // Modo 3D (easter egg): un clic en el logo cambia los videos por el gaussian splat.
+    splatEasterEgg: true,
+    splatUrl: 'splat/cheto-full.spz', // generado con SHARP desde 1ST FULL.jpg y comprimido a SPZ
+    faceTracking: true,      // botón "Cámara": mueve el fondo 3D siguiendo la cara por webcam (opt-in)
+    faceParallax: 6,         // amplitud de ese movimiento (más = más exagerado)
+
     // Video de fondo
     videoLayout: 'triptych', // 'single' (1 video 16:9) | 'triptych' (3 videos 9:16)
     videos: [                // en mobile se muestra solo el del medio

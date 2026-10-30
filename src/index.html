@@ -72,8 +72,16 @@
 
         <div class="ui">
             <header class="top">
-                <img class="top__sign" src="img/cheto-sign.svg" alt="Signo Cheto">
+                <div class="sign" id="sign">
+                    <div class="sign__red" aria-hidden="true"></div>
+                    <img class="top__sign sign__img" src="img/cheto-sign.svg" alt="Signo Cheto">
+                    <span class="sign__dot" aria-hidden="true"></span>
+                </div>
                 <div class="top__actions">
+                    <button type="button" class="btn btn--cam" id="face-toggle" aria-pressed="false" hidden
+                        title="Mueve el fondo 3D según la posición de tu cabeza. El video de la cámara no sale de tu navegador.">
+                        <span class="dot btn__cam-dot"></span><span class="btn__cam-label">Cámara</span>
+                    </button>
                     <button type="button" class="btn" id="remix-open" data-hover>
                         <span>Remix</span>
                         <span class="thin" data-if-link="stemsUrl">+</span>
@@ -152,6 +160,47 @@
                 <a class="remix__all" data-link="stemsUrl" target="_blank" rel="noopener">
                     <span>Descargar todo el pack</span><span class="thin">↓</span>
                 </a>
+            </div>
+        </div>
+
+        <!-- Modal del modo 3D (se abre al clickear el logo) -->
+        <div class="remix splat-modal" id="splat-modal" hidden>
+            <div class="remix__panel splat-modal__panel" role="dialog" aria-modal="true" aria-labelledby="splat-title">
+                <div class="remix__head">
+                    <div class="remix__intro">
+                        <div class="eyebrow eyebrow--dot"><span class="dot dot--pulse"></span><span>Encontraste algo</span></div>
+                        <span class="remix__title" id="splat-title">Modo 3D</span>
+                        <span class="remix__desc">El fondo ahora es una escena tridimensional reconstruida a partir de la foto de Lo que hay debajo.</span>
+                    </div>
+                    <button type="button" class="remix__close" id="splat-close" aria-label="Cerrar">×</button>
+                </div>
+                <ol class="splat-steps">
+                    <li class="splat-steps__item splat-steps__item--mouse">
+                        <span class="track__n">01</span>
+                        <span class="splat-steps__text">Mové el mouse para recorrer el edificio.</span>
+                    </li>
+                    <li class="splat-steps__item splat-steps__item--touch">
+                        <span class="track__n">01</span>
+                        <span class="splat-steps__text">Quedate mirando: el edificio se mueve solo.</span>
+                    </li>
+                    <li class="splat-steps__item splat-steps__item--cam">
+                        <span class="track__n">02</span>
+                        <span class="splat-steps__text">Activá la cámara y mové la cabeza: la perspectiva te sigue. El video no sale de tu navegador.</span>
+                    </li>
+                    <li class="splat-steps__item">
+                        <span class="track__n splat-steps__n-last"></span>
+                        <span class="splat-steps__text">Tocá el símbolo de arriba otra vez para volver.</span>
+                    </li>
+                </ol>
+                <div class="splat-modal__foot">
+                    <span class="splat-modal__status" id="splat-status"></span>
+                    <div class="splat-modal__actions">
+                        <button type="button" class="btn" id="splat-go">Entrar</button>
+                        <button type="button" class="btn btn--solid splat-modal__cam" id="splat-cam">
+                            <span>Activar cámara</span><span class="thin">◉</span>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

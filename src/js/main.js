@@ -8,6 +8,8 @@ const stage = $('#stage');
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let hovering = false;
+let splatReady = false;
+let splatCtl = null;
 
 /* ---------- Contenido desde config ---------- */
 
@@ -120,6 +122,7 @@ function buildTracks() {
 
 // Solo los videos del fondo principal; el del hover del disco se maneja aparte
 function kickVideos() {
+    if (splatReady) return;
     $$('.bg video', stage).forEach(v => {
         v.muted = true;
         if (v.paused) v.play().catch(() => {});
@@ -288,11 +291,186 @@ function closeRemix() {
     if (lastFocus) lastFocus.focus();
 }
 
+/* ---------- Modo 3D (easter egg): gaussian splat ---------- */
+
+// Por defecto se ven los videos. Un clic en el logo activa el modo 3D: recién ahí se
+// descarga el visor y el splat, y se abre un modal que explica qué hacer.
+// Otro clic en el logo vuelve a los videos.
+let splatMode = false;
+let splatLoading = null;
+const splatModal = $('#splat-modal');
+const splatStatus = $('#splat-status');
+const isTouch = matchMedia('(hover: none)').matches;
+
+function setSplatStatus(text, state = '') {
+    splatStatus.textContent = text;
+    splatStatus.dataset.state = state;
+}
+
+function loadSplat() {
+    if (splatLoading) return splatLoading;
+    setSplatStatus('Cargando escena 3D…', 'loading');
+    splatLoading = import(/* webpackChunkName: "splat" */ './splat-bg.js')
+        .then(({ startSplatBackground }) => {
+            splatCtl = startSplatBackground($('#bg'), {
+                url: config.splatUrl,
+                faceParallax: config.faceParallax,
+                onProgress: pct => setSplatStatus(`Cargando escena 3D… ${pct}%`, 'loading'),
+                onReady: () => {
+                    setSplatStatus('Escena lista', 'ready');
+                    if (splatMode) showSplat();
+                },
+                onError: () => {
+                    setSplatStatus('No se pudo cargar la escena 3D', 'error');
+                    splatLoading = null;
+                },
+            });
+        })
+        .catch(err => {
+            console.error('No se pudo cargar el modo 3D:', err);
+            setSplatStatus('No se pudo cargar la escena 3D', 'error');
+            splatLoading = null;
+        });
+    return splatLoading;
+}
+
+function showSplat() {
+    splatReady = true;
+    stage.classList.add('is-splat-ready');
+    // Los videos se pausan cuando el fundido terminó
+    setTimeout(() => { if (splatReady) $$('.bg video', stage).forEach(v => v.pause()); }, 1500);
+}
+
+function enterSplat() {
+    splatMode = true;
+    stage.classList.add('is-splat');
+    $('#face-toggle').hidden = !canUseCamera();
+    openSplatModal();
+    if (splatCtl) {
+        splatCtl.resume();
+        if (splatCtl.ready) showSplat();
+    } else {
+        loadSplat();
+    }
+}
+
+function exitSplat() {
+    splatMode = false;
+    splatReady = false;
+    stopFace();
+    $('#face-toggle').hidden = true;
+    stage.classList.remove('is-splat-ready');
+    kickVideos();
+    // Se deja de renderizar cuando terminó el fundido de salida
+    setTimeout(() => {
+        if (splatMode) return;
+        stage.classList.remove('is-splat');
+        if (splatCtl) splatCtl.pause();
+    }, 1200);
+}
+
+function toggleSplat() {
+    if (!config.splatEasterEgg || !config.splatUrl) return;
+    hovering = false;
+    glitch();
+    if (splatMode) exitSplat();
+    else { enterSplat(); markEggFound(); }
+}
+
+function openSplatModal() {
+    lastFocus = document.activeElement;
+    splatModal.hidden = false;
+    $('#splat-close').focus();
+}
+
+function closeSplatModal() {
+    splatModal.hidden = true;
+    if (lastFocus) lastFocus.focus();
+}
+
+/* ---------- Modo 3D: seguir la cara por webcam ---------- */
+
+// Opt-in: la cámara solo se pide al tocar el botón, y se apaga al tocarlo de nuevo.
+let faceStop = null;
+const faceBtn = $('#face-toggle');
+
+const canUseCamera = () => !!(config.faceTracking && navigator.mediaDevices?.getUserMedia && !isTouch);
+
+function setFaceState(state) {
+    faceBtn.dataset.state = state;
+    faceBtn.setAttribute('aria-pressed', state === 'on');
+    $('.btn__cam-label', faceBtn).textContent =
+        { off: 'Cámara', loading: 'Cámara…', on: 'Cámara on', error: 'Sin cámara' }[state];
+}
+
+function stopFace() {
+    if (!faceStop) return;
+    faceStop();
+    faceStop = null;
+    if (splatCtl) splatCtl.setHead(null);
+    setFaceState('off');
+}
+
+async function toggleFace() {
+    if (faceStop) { stopFace(); return; }
+    if (!splatCtl) await loadSplat();
+    setFaceState('loading');
+    try {
+        const { startFaceTracking } = await import(/* webpackChunkName: "face" */ './face-track.js');
+        faceStop = await startFaceTracking(head => splatCtl && splatCtl.setHead(head));
+        if (!splatMode) { stopFace(); return; }
+        setFaceState('on');
+    } catch (err) {
+        console.error('Seguimiento de cara:', err);
+        setFaceState('error');
+        setTimeout(() => setFaceState('off'), 2500);
+    }
+}
+
+// El símbolo de la banda (arriba a la izquierda) invita a hacer clic hasta que
+// el visitante descubre el modo 3D; después se calma en ese navegador.
+const EGG_KEY = 'cheto-modo-3d-visto';
+
+function markEggFound() {
+    stage.classList.add('egg-found');
+    try { localStorage.setItem(EGG_KEY, '1'); } catch (e) { /* sin almacenamiento: no pasa nada */ }
+}
+
+function setupSplatMode() {
+    if (!config.splatEasterEgg || !config.splatUrl) return;
+    const sign = $('#sign');
+    stage.classList.add('is-egg');
+    try { if (localStorage.getItem(EGG_KEY)) stage.classList.add('egg-found'); } catch (e) { /* idem */ }
+    sign.setAttribute('role', 'button');
+    sign.setAttribute('tabindex', '0');
+    sign.setAttribute('aria-label', 'Activar o desactivar el modo 3D');
+    sign.title = '¿Qué hay debajo?';
+    sign.addEventListener('click', toggleSplat);
+    sign.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSplat(); }
+    });
+
+    stage.classList.toggle('is-touch', isTouch);
+    stage.classList.toggle('no-camera', !canUseCamera());
+    setFaceState('off');
+    faceBtn.addEventListener('click', toggleFace);
+
+    $('#splat-close').addEventListener('click', closeSplatModal);
+    $('#splat-go').addEventListener('click', closeSplatModal);
+    $('#splat-cam').addEventListener('click', () => {
+        closeSplatModal();
+        if (!faceStop) toggleFace();
+    });
+    splatModal.addEventListener('click', e => { if (e.target === splatModal) closeSplatModal(); });
+    addEventListener('keydown', e => { if (e.key === 'Escape' && !splatModal.hidden) closeSplatModal(); });
+}
+
 /* ---------- Init ---------- */
 
 function init() {
     applyContent();
     buildBackground();
+    setupSplatMode();
     buildTracks();
     applyPalette(false);
     kickVideos();

@@ -34,5 +34,10 @@
     },
     "engines": {
         "node": ">=18"
+    },
+    "dependencies": {
+        "@mediapipe/tasks-vision": "^1.1.1",
+        "@sparkjsdev/spark": "^2.4.0",
+        "three": "^0.187.0"
     }
 }

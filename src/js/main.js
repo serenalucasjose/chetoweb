@@ -231,9 +231,12 @@ function makeGrain() {
 
 /* ---------- Glitch del logo ---------- */
 
+let glitching = false;
+
 function glitch() {
     const red = $('#mark-red'), word = $('#mark-word'), fl = $('#flash');
     if (hovering) return;
+    glitching = true;
     red.style.transition = 'none';
     word.style.transition = 'none';
     fl.style.transition = 'opacity .08s linear';
@@ -241,6 +244,7 @@ function glitch() {
     let i = 0;
     const step = () => {
         if (i++ >= steps) {
+            glitching = false;
             red.style.opacity = '';
             red.style.transform = '';
             word.style.transform = '';
@@ -427,9 +431,22 @@ async function toggleFace() {
     }
 }
 
+// Pista del easter egg: cada tanto el logo se abre por una ranura y deja ver
+// "lo que hay debajo". Corre solo con los videos (no en el modo 3D).
+function schedulePeek(delay) {
+    setTimeout(() => {
+        if (!splatMode && !hovering && !glitching && !document.hidden) {
+            stage.classList.add('is-peek');
+            setTimeout(() => stage.classList.remove('is-peek'), 900);
+        }
+        schedulePeek(10000 + Math.random() * 6000);
+    }, delay);
+}
+
 function setupSplatMode() {
     if (!config.splatEasterEgg || !config.splatUrl) return;
     const mark = $('#mark');
+    if (!reduceMotion) schedulePeek(5000);
     mark.setAttribute('role', 'button');
     mark.setAttribute('tabindex', '0');
     mark.setAttribute('aria-label', 'CHETO — activar o desactivar el modo 3D');

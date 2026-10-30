@@ -46,6 +46,7 @@ a[aria-disabled='true'] { cursor: default; }
     --pad: clamp(20px, 4vw, 56px);
     --grain: .09;
     --scan: .5;
+    --overlay: 1;
     position: relative;
     width: 100vw;
     height: 100vh;
@@ -117,7 +118,7 @@ a[aria-disabled='true'] { cursor: default; }
 
 /* ---------- Paletas ---------- */
 
-.palettes { position: absolute; inset: 0; pointer-events: none; }
+.palettes { position: absolute; inset: 0; pointer-events: none; opacity: var(--overlay); }
 
 .pal {
     position: absolute;

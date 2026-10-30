@@ -40,6 +40,7 @@ function applyContent() {
     const g = { suave: [.05, .25], medio: [.09, .5], fuerte: [.15, .85] }[config.effects] || [.09, .5];
     stage.style.setProperty('--grain', g[0]);
     stage.style.setProperty('--scan', g[1]);
+    stage.style.setProperty('--overlay', config.overlay ?? 1);
 }
 
 function videoEl(src, label) {

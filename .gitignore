@@ -1,5 +1,3 @@
 node_modules
 icons
 dist
-# Splats generados con SHARP (licencia solo para investigación): no se versionan
-static/splat/

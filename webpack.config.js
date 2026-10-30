@@ -29,12 +29,7 @@ module.exports = (env, argv) => ({
                 // Runtime de MediaPipe para el seguimiento de cara (se sirve desde el propio sitio)
                 { from: 'node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.*', to: 'mediapipe/wasm/[name][ext]' },
                 { from: 'node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_nosimd_internal.*', to: 'mediapipe/wasm/[name][ext]' },
-                {
-                    from: 'static',
-                    // Los splats de SHARP son solo para pruebas locales (licencia de investigación):
-                    // nunca van al build de producción que se publica.
-                    globOptions: { ignore: argv.mode === 'production' ? ['**/splat/**'] : [] },
-                }
+                { from: 'static' }
             ]
         }),
         new MiniCssExtractPlugin({

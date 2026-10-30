@@ -22,8 +22,7 @@ module.exports = {
         new HtmlWebpackPlugin({
             template: './src/index.html',
             filename: 'index.html',
-            chunks: ['index'],
-            inject: true
+            inject: 'body'
         }),
         new CopyWebpackPlugin({
             patterns: [
@@ -40,11 +39,14 @@ module.exports = {
                 test: /\.scss$/,
                 use: [
                     MiniCssExtractPlugin.loader, // Replaces 'style-loader'
-                    'css-loader',
-                    'sass-loader'
+                    { loader: 'css-loader', options: { url: false } }, // las url() apuntan a /img del sitio publicado
+                    { loader: 'sass-loader', options: { api: 'modern' } }
                 ],
             },
         ],
+    },
+    performance: {
+        hints: false, // imágenes y videos estáticos pesan más que el bundle
     },
     optimization: {
         minimize: true,

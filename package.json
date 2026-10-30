@@ -22,7 +22,7 @@
         "gh-pages": "^6.1.1",
         "html-webpack-plugin": "^5.5.0",
         "mini-css-extract-plugin": "^2.9.0",
-        "node-sass": "^9.0.0",
+        "sass": "^1.107.0",
         "sass-loader": "^14.2.1",
         "style-loader": "^3.3.4",
         "terser-webpack-plugin": "^5.3.10",

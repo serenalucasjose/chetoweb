@@ -33,6 +33,7 @@ function applyContent() {
     }
 
     $$('[data-album-art]').forEach(img => { img.src = config.albumArt; });
+    $$('[data-album-blur]').forEach(img => { img.src = config.albumArtBlur || config.albumArt; });
 
     const g = { suave: [.05, .25], medio: [.09, .5], fuerte: [.15, .85] }[config.effects] || [.09, .5];
     stage.style.setProperty('--grain', g[0]);
@@ -149,6 +150,18 @@ function albumOn() {
 function albumOff() {
     hovering = false;
     stage.classList.remove('is-album');
+}
+
+/* ---------- Precarga del hover del disco ---------- */
+
+// Decodifica las imágenes del fondo del disco cuando el navegador está libre,
+// para que el primer hover no tenga que hacerlo en el momento (se trababa).
+function warmAlbumHover() {
+    const idle = window.requestIdleCallback || (cb => setTimeout(cb, 500));
+    idle(() => {
+        $$('.album-bg img').forEach(img => { if (img.decode) img.decode().catch(() => {}); });
+        stage.classList.add('is-album-warm');
+    });
 }
 
 /* ---------- Parallax ---------- */
@@ -269,6 +282,7 @@ function init() {
     // Entrada del logo y del disco
     setTimeout(() => stage.classList.add('is-ready'), 250);
     setTimeout(() => stage.classList.add('is-album-shown'), 1800);
+    addEventListener('load', warmAlbumHover);
 
     addEventListener('pointermove', onPointerMove);
 

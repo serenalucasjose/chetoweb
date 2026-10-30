@@ -6,7 +6,8 @@
     "scripts": {
         "start": "webpack-dev-server --open --mode development --config webpack.config.js",
         "build": "webpack --mode production",
-        "deploy": "gh-pages -d dist"
+        "predeploy": "npm run build",
+        "deploy": "gh-pages -d dist --dotfiles -m \"Deploy $(git rev-parse --short HEAD)\""
     },
     "keywords": [],
     "author": "",
@@ -30,5 +31,8 @@
         "webpack": "^5.74.0",
         "webpack-cli": "^4.10.0",
         "webpack-dev-server": "^4.9.3"
+    },
+    "engines": {
+        "node": ">=18"
     }
 }

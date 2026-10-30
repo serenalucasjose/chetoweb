@@ -26,9 +26,13 @@ async function getDetector() {
 // x, y entre -1 y 1 desde el punto de vista de quien mira (derecha y arriba positivos);
 // z > 0 cuando se acerca a la pantalla, < 0 cuando se aleja.
 // Devuelve una función para detenerlo.
-export async function startFaceTracking(onHead) {
+// lowPower (celulares): cámara a 320x240 y detección a 15 por segundo, para no quitarle
+// GPU al 3D. El movimiento se suaviza después, así que no se nota.
+export async function startFaceTracking(onHead, { lowPower = false } = {}) {
     const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+        video: lowPower
+            ? { facingMode: 'user', width: { ideal: 320 }, height: { ideal: 240 } }
+            : { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false,
     });
     // Safari de iOS solo decodifica el video de la cámara si está en la página
@@ -54,10 +58,14 @@ export async function startFaceTracking(onHead) {
     let running = true;
     let refWidth = null; // tamaño de la cara al empezar: referencia para la distancia
     let lastTime = -1;
+    let lastDetect = 0;
+    const minGap = 1000 / (lowPower ? 15 : 30);
 
     const loop = () => {
         if (!running) return;
-        if (video.readyState >= 2 && video.currentTime !== lastTime) {
+        const now = performance.now();
+        if (video.readyState >= 2 && video.currentTime !== lastTime && now - lastDetect >= minGap) {
+            lastDetect = now;
             lastTime = video.currentTime;
             const res = det.detectForVideo(video, performance.now());
             const face = res.detections[0];

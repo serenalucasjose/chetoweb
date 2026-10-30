@@ -133,6 +133,11 @@ a[aria-disabled='true'] { cursor: default; }
 
 .stage.is-splat-ready .bg__splat { opacity: 1; }
 
+// Los videos quedan tapados por el 3D: una vez terminado el fundido se ocultan para no
+// componerlos en cada frame (al salir vuelven a verse en el acto)
+.bg__tri, .bg__single { transition: visibility 0s; }
+.stage.is-splat-ready .bg__tri, .stage.is-splat-ready .bg__single { visibility: hidden; transition: visibility 0s linear 1.3s; }
+
 // En celulares, con el 3D activo, el grano queda quieto: animarlo encima del canvas
 // obliga a recomponer toda la pantalla en cada salto
 .stage.is-touch.is-splat-ready .grain__tex { animation: none; }
@@ -295,6 +300,9 @@ a[aria-disabled='true'] { cursor: default; }
     transition: opacity 1.1s ease;
 
     &.is-active { opacity: 1; }
+
+    // Las manchas solo se animan mientras su paleta se ve (si no, es trabajo invisible)
+    &:not(.is-active) .blob { animation-play-state: paused; }
 }
 
 .pal__tint { position: absolute; inset: 0; mix-blend-mode: color; opacity: .85; }

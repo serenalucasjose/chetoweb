@@ -23,11 +23,17 @@ npm start        # servidor local con recarga
 Un clic en el símbolo de la banda (arriba a la izquierda) cambia los videos por un
 gaussian splat del edificio con parallax 3D, y opcionalmente sigue la cara por webcam.
 
-- Splat: `static/splat/cheto-full.spz`, generado con [SHARP](https://github.com/apple-aiml-research/ml-sharp)
-  desde `1ST FULL.jpg` y comprimido con `@playcanvas/splat-transform`.
-- En pantallas táctiles se carga `cheto-mobile.spz` (350 mil gaussianas, con `--decimate-adaptive`)
-  con render más liviano; si aun así va lento, pasa sola a `cheto-mobile-lite.spz` (200 mil).
-  `?splat=full|mobile|lite` fuerza una versión para probar.
+- Splats (`static/splat/`), generados con [SHARP](https://github.com/apple-aiml-research/ml-sharp)
+  desde `1ST FULL.jpg`. SHARP crea dos capas por píxel que casi siempre coinciden: se fusionan
+  los pares duplicados y se exporta a SOG con `@playcanvas/splat-transform`.
+  - `cheto-full.sog`: desktop, 798 mil gaussianas (6,8 MB).
+  - `cheto-mobile.sog`: pantallas táctiles, 350 mil (3,2 MB, `--decimate-adaptive`).
+  - `cheto-mobile-lite.sog`: 200 mil (1,8 MB), si en mobile no alcanza bajando la resolución.
+- Rendimiento: cada gaussiana se dibuja hasta 2,0 desvíos en desktop y 1,8 en mobile (Spark usa 2,83),
+  la resolución interna se adapta sola a la fluidez, no se redibuja con la cámara quieta y la
+  escena se congela con el modal abierto.
+- Movimiento: mouse en desktop; en celulares, vaivén amplio o inclinación del teléfono; cara por webcam (opt-in).
+- Pruebas: `?splat=full|mobile|lite|<archivo>`, `?dpr=`, `?fps=` (0 = sin tope) y `?std=` fuerzan versión y calidad.
 - Visor: [Spark](https://sparkjs.dev) (`src/js/splat-bg.js`). Cara: MediaPipe (`src/js/face-track.js`).
 - Se activa/desactiva con `splatEasterEgg` y `faceTracking` en `src/js/config.js`.
 

@@ -182,7 +182,9 @@ function warmAlbumHover() {
             albumVideo.preload = 'auto';
             albumVideo.load();
         }
-        stage.classList.add('is-album-warm');
+        // La capa casi invisible que deja listo el hover solo sirve con mouse; en táctiles
+        // sería una capa de pantalla completa más que componer en cada frame
+        if (matchMedia('(hover: hover)').matches) stage.classList.add('is-album-warm');
     });
 }
 
@@ -322,10 +324,28 @@ function splatProfile() {
     let preferLite = false;
     try { preferLite = !!localStorage.getItem(LITE_KEY); } catch (e) { /* sin almacenamiento */ }
     const url = { full: config.splatUrl, mobile: config.splatUrlMobile, lite: config.splatUrlLite }[force]
+        || (force && /^[\w-]+\.(spz|sog|ply)$/.test(force) ? `splat/${force}` : null)
         || (lowPower && preferLite && config.splatUrlLite)
         || (lowPower && config.splatUrlMobile) || config.splatUrl;
     const lite = lowPower && config.splatUrlLite && url !== config.splatUrlLite ? config.splatUrlLite : null;
-    return { lowPower, url, lite };
+    // Parámetros de prueba: ?dpr=0.75&fps=0&std=2 (resolución, tope de fps, tamaño de dibujo)
+    const params = new URLSearchParams(location.search);
+    const quality = {};
+    for (const k of ['dpr', 'fps', 'std']) if (params.has(k)) quality[k] = Number(params.get(k));
+    return { lowPower, url, lite, quality };
+}
+
+// Adelanta la descarga del visor y del splat (sin crear nada todavía) para que el modo 3D
+// aparezca antes al hacer clic
+let prefetched = false;
+function prefetchSplat() {
+    if (prefetched || splatCtl) return;
+    prefetched = true;
+    import(/* webpackChunkName: "splat" */ './splat-bg.js').catch(() => {});
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = splatProfile().url;
+    document.head.appendChild(link);
 }
 
 // Desarma el 3D (por ejemplo si iOS le quitó la memoria) para poder reintentar de cero
@@ -356,11 +376,13 @@ function loadSplat() {
             splatCtl = startSplatBackground($('#bg'), {
                 url: profile.url,
                 lowPower: profile.lowPower,
+                quality: profile.quality,
                 onSlow: profile.lite ? ms => {
                     console.info(`Modo 3D: ${Math.round(ms)} ms por frame, paso a la versión liviana`);
                     splatCtl.load(profile.lite).catch(err => console.error('Splat liviano:', err));
                 } : null,
                 faceParallax: config.faceParallax,
+                mobileParallax: config.mobileParallax,
                 onProgress: pct => setSplatStatus(`Cargando escena 3D… ${pct}%`, 'loading'),
                 onReady: () => {
                     clearTimeout(splatTimer);
@@ -377,6 +399,7 @@ function loadSplat() {
                     }
                 },
             });
+            if (!splatModal.hidden) splatCtl.freeze(true);
         })
         .catch(err => {
             console.error('No se pudo cargar el modo 3D:', err);
@@ -409,6 +432,7 @@ function exitSplat() {
     splatMode = false;
     splatReady = false;
     stopFace();
+    stopTilt();
     $('#face-toggle').hidden = true;
     stage.classList.remove('is-splat-ready');
     kickVideos();
@@ -428,15 +452,64 @@ function toggleSplat() {
     else { enterSplat(); markEggFound(); }
 }
 
+// Con el modal abierto el 3D se queda quieto: el desenfoque del fondo sobre una escena
+// en movimiento es de lo más caro para la GPU de un celular
 function openSplatModal() {
     lastFocus = document.activeElement;
     splatModal.hidden = false;
+    if (splatCtl) splatCtl.freeze(true);
     $('#splat-close').focus();
 }
 
 function closeSplatModal() {
     splatModal.hidden = true;
+    if (splatCtl) splatCtl.freeze(false);
     if (lastFocus) lastFocus.focus();
+    // En celulares, al cerrar (un toque del visitante) se pide la inclinación del teléfono
+    if (splatMode && isMobileDevice && !faceStop) startTilt();
+}
+
+/* ---------- Modo 3D: inclinación del teléfono ---------- */
+
+// Inclinar el teléfono mueve la cámara (en iPhone pide permiso, y solo se puede pedir
+// dentro de un toque). Sin permiso o sin sensor, queda el vaivén automático.
+let tiltOn = false;
+let tiltBase = null;
+
+function onOrientation(e) {
+    if (e.beta === null || e.gamma === null || !splatCtl) return;
+    // Pasar a ejes de pantalla según cómo esté girado el teléfono
+    const angle = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+    let x = e.gamma, y = e.beta;
+    if (angle === 90) { x = e.beta; y = -e.gamma; }
+    else if (angle === -90 || angle === 270) { x = -e.beta; y = e.gamma; }
+    if (!tiltBase) tiltBase = { x, y };
+    // La posición "neutra" se adapta despacio a cómo sostiene el teléfono
+    tiltBase.x += (x - tiltBase.x) * .004;
+    tiltBase.y += (y - tiltBase.y) * .004;
+    const clamp = v => Math.max(-1, Math.min(1, v));
+    splatCtl.setTilt({ x: clamp((x - tiltBase.x) / 18), y: clamp((y - tiltBase.y) / 18) });
+}
+
+async function startTilt() {
+    if (tiltOn || !config.tiltControl || typeof DeviceOrientationEvent === 'undefined') return;
+    try {
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            if (await DeviceOrientationEvent.requestPermission() !== 'granted') return;
+        }
+    } catch (e) {
+        return; // sin permiso: queda el vaivén automático
+    }
+    tiltOn = true;
+    tiltBase = null;
+    addEventListener('deviceorientation', onOrientation);
+}
+
+function stopTilt() {
+    if (!tiltOn) return;
+    tiltOn = false;
+    removeEventListener('deviceorientation', onOrientation);
+    if (splatCtl) splatCtl.setTilt(null);
 }
 
 /* ---------- Modo 3D: seguir la cara por webcam ---------- */
@@ -470,7 +543,7 @@ async function toggleFace() {
     setFaceState('loading');
     try {
         const { startFaceTracking } = await import(/* webpackChunkName: "face" */ './face-track.js');
-        faceStop = await startFaceTracking(head => splatCtl && splatCtl.setHead(head));
+        faceStop = await startFaceTracking(head => splatCtl && splatCtl.setHead(head), { lowPower: isMobileDevice });
         if (!splatMode) { stopFace(); return; }
         setFaceState('on');
     } catch (err) {
@@ -499,6 +572,8 @@ function setupSplatMode() {
     sign.setAttribute('aria-label', 'Activar o desactivar el modo 3D');
     sign.title = '¿Qué hay debajo?';
     sign.addEventListener('click', toggleSplat);
+    // Apenas el visitante apoya el mouse o el dedo en el símbolo, se empieza a bajar el 3D
+    ['pointerenter', 'touchstart', 'focus'].forEach(ev => sign.addEventListener(ev, prefetchSplat, { once: true, passive: true }));
     sign.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSplat(); }
     });

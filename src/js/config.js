@@ -18,6 +18,7 @@ export default {
 
     // Disco
     albumArt: 'img/lo-que-hay-debajo.webp',
+    albumBgVideo: 'videos/album-bg-blur.mp4',        // video de fondo del hover (chico, ya difuminado y estirado a 16:9)
     albumArtBlur: 'img/lo-que-hay-debajo-blur.webp', // versión chica ya difuminada para el fondo del hover ('' = difuminar en vivo, más pesado)
     albumUrl: '',            // link de Spotify del disco (todavía no está)
 

@@ -33,6 +33,8 @@ function applyContent() {
     }
 
     $$('[data-album-art]').forEach(img => { img.src = config.albumArt; });
+    if (config.albumBgVideo) albumVideo.src = config.albumBgVideo;
+    else albumVideo.remove();
     $$('[data-album-blur]').forEach(img => {
         img.src = config.albumArtBlur || config.albumArt;
         // Sin versión difuminada, se difumina en vivo (funciona, pero el hover es más pesado)
@@ -116,8 +118,9 @@ function buildTracks() {
 
 /* ---------- Video autoplay (iOS a veces lo pausa) ---------- */
 
+// Solo los videos del fondo principal; el del hover del disco se maneja aparte
 function kickVideos() {
-    $$('video', stage).forEach(v => {
+    $$('.bg video', stage).forEach(v => {
         v.muted = true;
         if (v.paused) v.play().catch(() => {});
     });
@@ -146,14 +149,21 @@ function hoverOff() {
     applyPalette(false);
 }
 
+const albumVideo = $('#album-bg-video');
+let albumPauseT;
+
 function albumOn() {
     hovering = true;
     stage.classList.add('is-album');
+    clearTimeout(albumPauseT);
+    if (albumVideo.src) albumVideo.play().catch(() => {});
 }
 
 function albumOff() {
     hovering = false;
     stage.classList.remove('is-album');
+    // Se pausa cuando terminó el fundido de salida
+    albumPauseT = setTimeout(() => albumVideo.pause(), 900);
 }
 
 /* ---------- Precarga del hover del disco ---------- */
@@ -164,6 +174,11 @@ function warmAlbumHover() {
     const idle = window.requestIdleCallback || (cb => setTimeout(cb, 500));
     idle(() => {
         $$('.album-bg img').forEach(img => { if (img.decode) img.decode().catch(() => {}); });
+        // El video del hover solo se descarga en pantallas con mouse (en mobile no hay hover)
+        if (albumVideo.src && matchMedia('(hover: hover)').matches) {
+            albumVideo.preload = 'auto';
+            albumVideo.load();
+        }
         stage.classList.add('is-album-warm');
     });
 }

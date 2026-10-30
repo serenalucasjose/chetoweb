@@ -210,6 +210,16 @@ a[aria-disabled='true'] { cursor: default; }
 
 .album-bg__blur.is-live-blur { filter: blur(28px) saturate(1.2); }
 
+// Video ya difuminado; object-fit: fill lo estira al ratio de la pantalla
+.album-bg__video {
+    position: absolute;
+    inset: -8%;
+    width: 116%;
+    height: 116%;
+    object-fit: fill;
+    transform: scale(1.1);
+}
+
 // Oscurece el fondo difuminado (antes era brightness() en un filtro en vivo)
 .album-bg::before {
     content: '';
@@ -261,6 +271,7 @@ a[aria-disabled='true'] { cursor: default; }
     background: repeating-linear-gradient(0deg, rgba(0, 0, 0, .22) 0 1px, rgba(0, 0, 0, 0) 1px 3px);
     pointer-events: none;
     opacity: var(--scan);
+    transition: opacity .9s ease;
 }
 
 .grain {
@@ -270,6 +281,7 @@ a[aria-disabled='true'] { cursor: default; }
     pointer-events: none;
     mix-blend-mode: screen;
     opacity: var(--grain);
+    transition: opacity .9s ease;
 }
 
 // Una textura fija que salta de posición ~20 veces por segundo:
@@ -533,6 +545,7 @@ a[aria-disabled='true'] { cursor: default; }
     .album-card--desk { transform: translateY(-4px) scale(1.04); }
     .album-card__art img { filter: grayscale(0) contrast(1.1); transform: scale(1.1); }
     .album-bg { opacity: 1; }
+    .grain, .scanlines { opacity: 0; }
     .album-bg__big { transform: translate(-50%, -50%) scale(1); }
     // Solo opacidad y escala: animar blur() del logo cuesta un repintado por frame
     .mark {

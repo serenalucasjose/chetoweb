@@ -15,7 +15,26 @@ let cycAlt = false;
 /* ---------- Contenido desde config ---------- */
 
 function applyContent() {
-    $$('[data-link]').forEach(a => { a.href = config[a.dataset.link] || '#'; });
+    // Links: si el valor está vacío, el elemento queda sin link y se muestra "Próximamente"
+    $$('[data-link]').forEach(a => {
+        const url = config[a.dataset.link];
+        if (url) a.href = url;
+        else {
+            a.removeAttribute('href');
+            a.removeAttribute('download');
+            a.setAttribute('aria-disabled', 'true');
+        }
+    });
+    $$('[data-if-link]').forEach(el => { el.hidden = !config[el.dataset.ifLink]; });
+    $$('[data-if-no-link]').forEach(el => { el.hidden = !!config[el.dataset.ifNoLink]; });
+
+    if (!config.stemsUrl) {
+        const btn = $('#remix-open');
+        btn.disabled = true;
+        btn.removeAttribute('data-hover');
+        btn.title = 'Stems disponibles próximamente';
+    }
+
     $$('[data-album-art]').forEach(img => { img.src = config.albumArt; });
 
     const g = { suave: [.05, .25], medio: [.09, .5], fuerte: [.15, .85] }[config.effects] || [.09, .5];
@@ -75,16 +94,19 @@ function buildTracks() {
             <span class="track__n">${String(i + 1).padStart(2, '0')}</span>
             <div class="track__info">
                 <span class="track__title"></span>
-                <span class="track__meta">${t.bpm} BPM · ${t.key}</span>
+                <span class="track__meta"></span>
             </div>
             <div class="track__dl">
                 <a class="chip" download><span>Voces</span><span class="thin">↓</span></a>
                 <a class="chip" download><span>Backing</span><span class="thin">↓</span></a>
             </div>`;
         $('.track__title', row).textContent = t.title;
-        const [vox, back] = $$('.chip', row);
-        vox.href = t.vox || '#';
-        back.href = t.back || '#';
+        $('.track__meta', row).textContent = [t.bpm && `${t.bpm} BPM`, t.key].filter(Boolean).join(' · ');
+        $$('.chip', row).forEach((a, j) => {
+            const url = j === 0 ? t.vox : t.back;
+            if (url) a.href = url;
+            else a.setAttribute('aria-disabled', 'true');
+        });
         list.appendChild(row);
     });
 }
@@ -225,6 +247,7 @@ const remix = $('#remix');
 let lastFocus = null;
 
 function openRemix() {
+    if (!config.stemsUrl) return;
     hoverOff();
     lastFocus = document.activeElement;
     remix.hidden = false;

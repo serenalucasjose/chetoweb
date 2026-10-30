@@ -1,5 +1,5 @@
 // Contenido editable de la landing.
-// Los valores marcados con "PLACEHOLDER" vienen del diseño y hay que reemplazarlos.
+// Un link vacío ('') deshabilita ese elemento y muestra "Próximamente" / "Pronto".
 
 export default {
     // Look
@@ -8,32 +8,34 @@ export default {
     glitch: true,            // glitch periódico sobre el logo
 
     // Video de fondo
-    videoLayout: 'single',   // 'single' (1 video 16:9) | 'triptych' (3 videos 9:16)
-    videos: [
-        'https://assets.mixkit.co/videos/4026/4026-720.mp4', // PLACEHOLDER
+    videoLayout: 'triptych', // 'single' (1 video 16:9) | 'triptych' (3 videos 9:16)
+    videos: [                // en mobile se muestra solo el del medio
+        'videos/cheto-green.mp4',
+        'videos/cheto-purple.mp4',
+        'videos/cheto-yellow.mp4',
     ],
 
     // Disco
-    albumArt: 'https://images.unsplash.com/photo-1770891948880-65950e82697d?w=800&h=800&fit=crop&q=70&auto=format', // PLACEHOLDER
-    albumUrl: '#',           // PLACEHOLDER
+    albumArt: 'img/lo-que-hay-debajo.webp',
+    albumUrl: '',            // link de Spotify del disco (todavía no está)
 
     // Links
-    dateUrl: '#',            // PLACEHOLDER — entradas de la próxima fecha
-    presskitUrl: '#',        // PLACEHOLDER
+    dateUrl: '',             // entradas de la próxima fecha (todavía no está)
+    presskitUrl: 'files/Cheto-Dossier.pdf',
     youtubeUrl: 'https://www.youtube.com/watch?v=ZG6v9lF_ZWk',
     spotifyUrl: 'https://spotify.link/yBlo0vKQHJb',
     instagramUrl: 'https://www.instagram.com/chetomusica',
 
-    // Remix: pack completo + stems por tema
-    stemsUrl: '#',           // PLACEHOLDER
-    tracks: [                // PLACEHOLDER (títulos, BPM, tonalidad y archivos)
-        { title: 'Lo que hay debajo', bpm: 122, key: '8A', vox: '#', back: '#' },
-        { title: 'Superficie', bpm: 124, key: '5A', vox: '#', back: '#' },
-        { title: 'Neón en la piel', bpm: 118, key: '11B', vox: '#', back: '#' },
-        { title: 'Subsuelo', bpm: 126, key: '3A', vox: '#', back: '#' },
-        { title: 'Marea baja', bpm: 110, key: '9A', vox: '#', back: '#' },
-        { title: 'Hilo rojo', bpm: 124, key: '12A', vox: '#', back: '#' },
-        { title: 'Fiebre lenta', bpm: 100, key: '6B', vox: '#', back: '#' },
-        { title: 'Después del ruido', bpm: 120, key: '1A', vox: '#', back: '#' },
+    // Remix: mientras stemsUrl esté vacío, el botón Remix queda deshabilitado.
+    stemsUrl: '',
+    tracks: [                // completar bpm, key, vox y back cuando estén los stems
+        { title: 'Lo que hay debajo', vox: '', back: '' },
+        { title: 'Electronacimiento', vox: '', back: '' },
+        { title: 'El sistema', vox: '', back: '' },
+        { title: 'Whats', vox: '', back: '' },
+        { title: 'Una que me cueste', vox: '', back: '' },
+        { title: 'Una pieza del rompecabezas', vox: '', back: '' },
+        { title: 'Factos', vox: '', back: '' },
+        { title: 'Bien chill', vox: '', back: '' },
     ],
 };

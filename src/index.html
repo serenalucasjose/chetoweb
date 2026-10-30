@@ -8,10 +8,13 @@
     <meta name="description" content="Cheto — Electrónica / Progressive / Pop / Synth. Nuevo disco: Lo que hay debajo.">
     <!-- Open Graph -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://cheto.live">
+    <meta property="og:url" content="https://cheto.tech">
     <meta property="og:title" content="Cheto - Web Oficial">
-    <meta property="og:description" content="Electrónica/Progressive/Pop/Synth - Seguinos en Spotify, Instagram y YouTube.">
-    <meta property="og:image" content="img/cheto.webp">
+    <meta property="og:description" content="Electrónica/Progressive/Pop/Synth. Nuevo disco: Lo que hay debajo. Seguinos en Spotify, Instagram y YouTube.">
+    <meta property="og:image" content="https://cheto.tech/img/og-cheto.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="1200">
+    <meta name="twitter:card" content="summary_large_image">
     <title>Cheto Web Oficial</title>
     <link rel="icon" href="img/cheto-sign.svg" type="image/svg+xml">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -22,6 +25,7 @@
 <!--
     Textos: se editan acá.
     Links, videos, arte de tapa, paleta, efectos y stems: src/js/config.js
+    Un link vacío ('') en config.js deshabilita ese elemento y muestra "Próximamente".
 -->
 
 <body>
@@ -70,9 +74,11 @@
                 <img class="top__sign" src="img/cheto-sign.svg" alt="Signo Cheto">
                 <div class="top__actions">
                     <button type="button" class="btn" id="remix-open" data-hover>
-                        <span>Remix</span><span class="thin">+</span>
+                        <span>Remix</span>
+                        <span class="thin" data-if-link="stemsUrl">+</span>
+                        <span class="btn__soon" data-if-no-link="stemsUrl">Pronto</span>
                     </button>
-                    <a class="btn btn--solid" data-link="presskitUrl" download data-hover>
+                    <a class="btn btn--solid" data-link="presskitUrl" download="Cheto-Dossier.pdf" data-hover>
                         <span>Presskit</span><span class="thin">↓</span>
                     </a>
                 </div>
@@ -93,7 +99,10 @@
                 <div class="album-card__info">
                     <span class="eyebrow">Nuevo disco</span>
                     <span class="album-card__title">Lo que hay debajo</span>
-                    <span class="album-card__cta"><span>Escuchar</span><span class="thin">↗</span></span>
+                    <span class="album-card__cta">
+                        <span data-if-link="albumUrl">Escuchar</span><span class="thin" data-if-link="albumUrl">↗</span>
+                        <span data-if-no-link="albumUrl">Próximamente</span>
+                    </span>
                 </div>
             </a>
 
@@ -105,14 +114,17 @@
                         <span class="eyebrow">Nuevo disco</span>
                         <span class="album-card__title">Lo que hay debajo</span>
                     </div>
-                    <span class="album-card__cta"><span>Escuchar</span><span class="thin">↗</span></span>
+                    <span class="album-card__cta">
+                        <span data-if-link="albumUrl">Escuchar</span><span class="thin" data-if-link="albumUrl">↗</span>
+                        <span data-if-no-link="albumUrl">Pronto</span>
+                    </span>
                 </a>
 
                 <div class="next">
                     <div class="eyebrow eyebrow--dot"><span class="dot dot--pulse"></span><span>Próxima fecha</span></div>
                     <a class="next__link" data-link="dateUrl" target="_blank" rel="noopener" data-hover>
-                        <span class="next__text">Sáb 14.11 — Niceto Club, Buenos Aires</span>
-                        <span class="next__arrow">↗</span>
+                        <span class="next__text">Próximamente</span>
+                        <span class="next__arrow" data-if-link="dateUrl">↗</span>
                     </a>
                 </div>
 

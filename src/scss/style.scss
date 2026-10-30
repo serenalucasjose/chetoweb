@@ -35,6 +35,9 @@ img { display: block; }
 
 @keyframes chetoPulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
+/* Links deshabilitados (contenido "próximamente") */
+a[aria-disabled='true'] { cursor: default; }
+
 /* ---------- Stage ---------- */
 
 .stage {
@@ -310,6 +313,15 @@ img { display: block; }
     &:hover { background: rgba(240, 240, 240, .08); border-color: $fg; }
 }
 
+.btn:disabled {
+    cursor: default;
+    opacity: .45;
+
+    &:hover { background: transparent; border-color: $line; }
+}
+
+.btn__soon { font-size: 9px; letter-spacing: .2em; opacity: .8; }
+
 .btn--solid {
     border-color: $fg;
 
@@ -496,6 +508,8 @@ img { display: block; }
     transition: border-color .3s;
 
     &:hover { border-color: $fg; }
+
+    &[aria-disabled='true'] { border-bottom-color: transparent; }
 }
 
 .next__text {
@@ -621,6 +635,8 @@ img { display: block; }
 }
 
 .track__dl { display: flex; gap: 8px; }
+
+.chip[aria-disabled='true'] { opacity: .35; pointer-events: none; }
 
 .chip {
     display: flex;

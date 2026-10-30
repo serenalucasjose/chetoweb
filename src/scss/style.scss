@@ -133,30 +133,93 @@ a[aria-disabled='true'] { cursor: default; }
 
 .stage.is-splat-ready .bg__splat { opacity: 1; }
 
-// Easter egg: el logo es clickeable; no cambia el cursor, pero da pistas
-.mark[role='button'] { cursor: default; outline: none; }
-.mark[role='button']:focus-visible { outline: 1px solid rgba(240, 240, 240, .5); outline-offset: 12px; }
+// Easter egg: el símbolo de la banda (arriba a la izquierda) activa el modo 3D.
+// Mientras no se descubrió, invita a hacer clic: punto rojo, onda y mini glitch.
+.sign { position: relative; line-height: 0; outline: none; }
 
-// Pista al pasar el mouse: las letras se levantan y asoma la capa roja de abajo
-.stage:not(.is-splat) .mark[role='button']:hover {
-    .mark__word { transform: translateY(-4px); }
-    .mark__red { opacity: .85; transform: translateY(5px); }
+.sign__red {
+    position: absolute;
+    inset: 0;
+    background: $red;
+    -webkit-mask: url(img/cheto-sign.svg) center / contain no-repeat;
+    mask: url(img/cheto-sign.svg) center / contain no-repeat;
+    opacity: 0;
+    mix-blend-mode: screen;
+    transition: opacity .3s ease, transform .3s $ease;
 }
 
-// Pista periódica: una ranura horizontal se abre y deja ver la capa roja
-.stage.is-peek {
-    .mark__word { animation: markSlit .9s cubic-bezier(.7, 0, .3, 1); }
-    .mark__red { animation: markSlitRed .9s ease; }
+.sign__img { position: relative; transition: transform .3s $ease; }
+.sign__dot { display: none; }
+
+.is-egg {
+    .sign { cursor: pointer; }
+    .sign:focus-visible { outline: 1px solid rgba(240, 240, 240, .5); outline-offset: 10px; }
+
+
+
+    // Punto rojo que late, como el de "Próxima fecha"
+    .sign__dot {
+        display: block;
+        position: absolute;
+        top: -3px;
+        right: -12px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: $red;
+        animation: chetoPulse 1.8s ease-in-out infinite;
+    }
+
+    // Onda que sale del símbolo cada pocos segundos
+    .sign::after {
+        content: '';
+        position: absolute;
+        inset: -8px -10px;
+        border: 1px solid $red;
+        border-radius: 999px;
+        opacity: 0;
+        pointer-events: none;
+        animation: signPing 5s ease-out 2s infinite;
+    }
+
+    // Mini glitch: el símbolo tiembla y se desfasa en rojo un instante
+    .sign__img { animation: signJitter 7s steps(1) 3s infinite; }
+    .sign__red { animation: signJitterRed 7s steps(1) 3s infinite; }
+
+    // Hover: se agranda y asoma el rojo (pausa el mini glitch para que no lo pise)
+    .sign:hover {
+        .sign__img { animation: none; transform: scale(1.06); }
+        .sign__red { animation: none; opacity: .9; transform: translate(4px, -2px) scale(1.06); }
+    }
 }
 
-@keyframes markSlit {
-    0%, 100% { clip-path: polygon(0 0, 100% 0, 100% 50%, 0 50%, 0 50%, 100% 50%, 100% 100%, 0 100%); }
-    35%, 60% { clip-path: polygon(0 0, 100% 0, 100% 42%, 0 42%, 0 58%, 100% 58%, 100% 100%, 0 100%); }
+// Ya descubierto (o dentro del modo 3D): solo queda el hover
+.is-egg.egg-found, .is-egg.is-splat {
+    .sign__dot, .sign::after { display: none; }
+    .sign__img, .sign__red { animation: none; }
 }
 
-@keyframes markSlitRed {
-    0%, 100% { opacity: 0; }
-    20%, 75% { opacity: 1; }
+@keyframes signPing {
+    0% { opacity: .9; transform: scale(.85); }
+    30%, 100% { opacity: 0; transform: scale(1.5); }
+}
+
+@keyframes signJitter {
+    0%, 93%, 100% { transform: none; }
+    90% { transform: translate(2px, 0); }
+    91% { transform: translate(-3px, 1px); }
+    92% { transform: translate(1px, -1px); }
+}
+
+@keyframes signJitterRed {
+    0%, 93%, 100% { opacity: 0; transform: none; }
+    90% { opacity: 1; transform: translate(-4px, 0); }
+    91% { opacity: 1; transform: translate(5px, -1px); }
+    92% { opacity: .8; transform: translate(-2px, 1px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .is-egg .sign::after, .is-egg .sign__img, .is-egg .sign__red, .is-egg .sign__dot { animation: none; }
 }
 
 /* ---------- Modal del modo 3D ---------- */

@@ -72,7 +72,11 @@
 
         <div class="ui">
             <header class="top">
-                <img class="top__sign" src="img/cheto-sign.svg" alt="Signo Cheto">
+                <div class="sign" id="sign">
+                    <div class="sign__red" aria-hidden="true"></div>
+                    <img class="top__sign sign__img" src="img/cheto-sign.svg" alt="Signo Cheto">
+                    <span class="sign__dot" aria-hidden="true"></span>
+                </div>
                 <div class="top__actions">
                     <button type="button" class="btn btn--cam" id="face-toggle" aria-pressed="false" hidden
                         title="Mueve el fondo 3D según la posición de tu cabeza. El video de la cámara no sale de tu navegador.">
@@ -185,7 +189,7 @@
                     </li>
                     <li class="splat-steps__item">
                         <span class="track__n splat-steps__n-last"></span>
-                        <span class="splat-steps__text">Tocá el logo otra vez para volver.</span>
+                        <span class="splat-steps__text">Tocá el símbolo de arriba otra vez para volver.</span>
                     </li>
                 </ol>
                 <div class="splat-modal__foot">

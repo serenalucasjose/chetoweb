@@ -231,12 +231,9 @@ function makeGrain() {
 
 /* ---------- Glitch del logo ---------- */
 
-let glitching = false;
-
 function glitch() {
     const red = $('#mark-red'), word = $('#mark-word'), fl = $('#flash');
     if (hovering) return;
-    glitching = true;
     red.style.transition = 'none';
     word.style.transition = 'none';
     fl.style.transition = 'opacity .08s linear';
@@ -244,7 +241,6 @@ function glitch() {
     let i = 0;
     const step = () => {
         if (i++ >= steps) {
-            glitching = false;
             red.style.opacity = '';
             red.style.transform = '';
             word.style.transform = '';
@@ -378,7 +374,7 @@ function toggleSplat() {
     hovering = false;
     glitch();
     if (splatMode) exitSplat();
-    else enterSplat();
+    else { enterSplat(); markEggFound(); }
 }
 
 function openSplatModal() {
@@ -431,27 +427,26 @@ async function toggleFace() {
     }
 }
 
-// Pista del easter egg: cada tanto el logo se abre por una ranura y deja ver
-// "lo que hay debajo". Corre solo con los videos (no en el modo 3D).
-function schedulePeek(delay) {
-    setTimeout(() => {
-        if (!splatMode && !hovering && !glitching && !document.hidden) {
-            stage.classList.add('is-peek');
-            setTimeout(() => stage.classList.remove('is-peek'), 900);
-        }
-        schedulePeek(10000 + Math.random() * 6000);
-    }, delay);
+// El símbolo de la banda (arriba a la izquierda) invita a hacer clic hasta que
+// el visitante descubre el modo 3D; después se calma en ese navegador.
+const EGG_KEY = 'cheto-modo-3d-visto';
+
+function markEggFound() {
+    stage.classList.add('egg-found');
+    try { localStorage.setItem(EGG_KEY, '1'); } catch (e) { /* sin almacenamiento: no pasa nada */ }
 }
 
 function setupSplatMode() {
     if (!config.splatEasterEgg || !config.splatUrl) return;
-    const mark = $('#mark');
-    if (!reduceMotion) schedulePeek(5000);
-    mark.setAttribute('role', 'button');
-    mark.setAttribute('tabindex', '0');
-    mark.setAttribute('aria-label', 'CHETO — activar o desactivar el modo 3D');
-    mark.addEventListener('click', toggleSplat);
-    mark.addEventListener('keydown', e => {
+    const sign = $('#sign');
+    stage.classList.add('is-egg');
+    try { if (localStorage.getItem(EGG_KEY)) stage.classList.add('egg-found'); } catch (e) { /* idem */ }
+    sign.setAttribute('role', 'button');
+    sign.setAttribute('tabindex', '0');
+    sign.setAttribute('aria-label', 'Activar o desactivar el modo 3D');
+    sign.title = '¿Qué hay debajo?';
+    sign.addEventListener('click', toggleSplat);
+    sign.addEventListener('keydown', e => {
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleSplat(); }
     });
 

@@ -9,6 +9,7 @@ const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let hovering = false;
 let splatReady = false;
+let splatCtl = null;
 
 /* ---------- Contenido desde config ---------- */
 
@@ -298,15 +299,59 @@ function startSplat() {
     if (config.background !== 'splat' || !config.splatUrl) return;
     stage.classList.add('is-splat');
     import(/* webpackChunkName: "splat" */ './splat-bg.js')
-        .then(({ startSplatBackground }) => startSplatBackground($('#bg'), {
-            url: config.splatUrl,
-            onReady: () => {
-                splatReady = true;
-                stage.classList.add('is-splat-ready');
-                setTimeout(() => $$('.bg video', stage).forEach(v => v.pause()), 1500);
-            },
-        }))
+        .then(({ startSplatBackground }) => {
+            splatCtl = startSplatBackground($('#bg'), {
+                url: config.splatUrl,
+                faceParallax: config.faceParallax,
+                onReady: () => {
+                    splatReady = true;
+                    stage.classList.add('is-splat-ready');
+                    setTimeout(() => $$('.bg video', stage).forEach(v => v.pause()), 1500);
+                    setupFaceToggle();
+                },
+            });
+        })
         .catch(err => console.error('No se pudo cargar el fondo 3D:', err));
+}
+
+/* ---------- Experimental: seguir la cara por webcam ---------- */
+
+// Opt-in: la cámara solo se pide al tocar el botón, y se apaga al tocarlo de nuevo.
+function setupFaceToggle() {
+    const btn = $('#face-toggle');
+    const canUse = config.faceTracking && navigator.mediaDevices?.getUserMedia
+        && matchMedia('(hover: hover)').matches;
+    if (!canUse) return;
+    btn.hidden = false;
+    const label = $('.btn__cam-label', btn);
+    let stop = null;
+
+    const setState = (state) => {
+        btn.dataset.state = state;
+        btn.setAttribute('aria-pressed', state === 'on');
+        label.textContent = { off: 'Cámara', loading: 'Cámara…', on: 'Cámara on', error: 'Sin cámara' }[state];
+    };
+    setState('off');
+
+    btn.addEventListener('click', async () => {
+        if (stop) {
+            stop();
+            stop = null;
+            splatCtl.setHead(null);
+            setState('off');
+            return;
+        }
+        setState('loading');
+        try {
+            const { startFaceTracking } = await import(/* webpackChunkName: "face" */ './face-track.js');
+            stop = await startFaceTracking(head => splatCtl.setHead(head));
+            setState('on');
+        } catch (err) {
+            console.error('Seguimiento de cara:', err);
+            setState('error');
+            setTimeout(() => setState('off'), 2500);
+        }
+    });
 }
 
 /* ---------- Init ---------- */

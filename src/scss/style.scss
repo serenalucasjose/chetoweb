@@ -410,6 +410,14 @@ a[aria-disabled='true'] { cursor: default; }
 
 .btn__soon { font-size: 9px; letter-spacing: .2em; opacity: .8; }
 
+.btn--cam {
+    .btn__cam-dot { width: 7px; height: 7px; background: rgba(240, 240, 240, .4); transition: background .25s; }
+
+    &[data-state='on'] { border-color: $red; }
+    &[data-state='on'] .btn__cam-dot { background: $red; animation: chetoPulse 1.8s ease-in-out infinite; }
+    &[data-state='loading'] { cursor: progress; }
+}
+
 .btn--solid {
     border-color: $fg;
 

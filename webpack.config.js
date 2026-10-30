@@ -26,6 +26,9 @@ module.exports = (env, argv) => ({
         }),
         new CopyWebpackPlugin({
             patterns: [
+                // Runtime de MediaPipe para el seguimiento de cara (se sirve desde el propio sitio)
+                { from: 'node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_internal.*', to: 'mediapipe/wasm/[name][ext]' },
+                { from: 'node_modules/@mediapipe/tasks-vision/wasm/vision_wasm_nosimd_internal.*', to: 'mediapipe/wasm/[name][ext]' },
                 {
                     from: 'static',
                     // Los splats de SHARP son solo para pruebas locales (licencia de investigación):
@@ -50,6 +53,8 @@ module.exports = (env, argv) => ({
             },
         ],
     },
+    // MediaPipe tiene un import() dinámico que solo usa dentro de workers; en la página carga con <script>
+    ignoreWarnings: [{ module: /@mediapipe[\\/]tasks-vision/, message: /Critical dependency/ }],
     performance: {
         hints: false, // imágenes y videos estáticos pesan más que el bundle
     },

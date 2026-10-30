@@ -13,6 +13,9 @@ export function startSplatBackground(container, opts) {
         focusDist = 25,  // distancia al edificio (unidades de la escena) hacia donde mira la cámara
         parallax = 1.2,  // cuánto se mueve la cámara con el mouse
         zoom = 1.08,     // margen para que el parallax no muestre los bordes del splat
+        faceParallax = 6,  // modo cara: desplazamiento de cámara (bien exagerado)
+        faceDolly = 10,    // modo cara: cuánto se acerca la cámara al acercar la cara
+        faceZoom = 1.25,   // modo cara: zoom extra para tapar los bordes del splat
         onReady = () => {},
     } = opts;
 
@@ -37,17 +40,21 @@ export function startSplatBackground(container, opts) {
     // Encuadre tipo "cover": la foto llena la pantalla sin deformarse, como object-fit: cover.
     const halfV = Math.atan(PHOTO.h / 2 / PHOTO.focal);
     const halfH = Math.atan(PHOTO.w / 2 / PHOTO.focal);
+    let zoomCur = zoom;
+    let aspect = 1;
+    function updateFov() {
+        const half = aspect > PHOTO.w / PHOTO.h
+            ? Math.atan(Math.tan(halfH) / aspect)  // pantalla más ancha: manda el ancho
+            : halfV;                               // pantalla más angosta: manda el alto
+        camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(half) / zoomCur));
+        camera.aspect = aspect;
+        camera.updateProjectionMatrix();
+    }
     function resize() {
         const w = container.clientWidth, h = container.clientHeight;
         if (!w || !h) return;
-        const aspect = w / h;
-        const photoAspect = PHOTO.w / PHOTO.h;
-        const half = aspect > photoAspect
-            ? Math.atan(Math.tan(halfH) / aspect)  // pantalla más ancha: manda el ancho
-            : halfV;                               // pantalla más angosta: manda el alto
-        camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(half) / zoom));
-        camera.aspect = aspect;
-        camera.updateProjectionMatrix();
+        aspect = w / h;
+        updateFov();
         renderer.setSize(w, h, false);
     }
     new ResizeObserver(resize).observe(container);
@@ -57,7 +64,8 @@ export function startSplatBackground(container, opts) {
     // En pantallas táctiles hace un vaivén lento.
     const target = new THREE.Vector3(0, 0, -focusDist);
     const pointer = { x: 0, y: 0 };
-    const cur = { x: 0, y: 0 };
+    const cur = { x: 0, y: 0, z: 0 };
+    let head = null; // posición de la cara cuando el seguimiento por webcam está activo
     const touch = matchMedia('(hover: none)').matches;
     addEventListener('pointermove', e => {
         pointer.x = (e.clientX / innerWidth - .5) * 2;
@@ -65,16 +73,37 @@ export function startSplatBackground(container, opts) {
     });
 
     renderer.setAnimationLoop(t => {
-        if (touch) {
-            pointer.x = Math.sin(t / 4000) * .6;
-            pointer.y = Math.cos(t / 5300) * .4;
+        let want;
+        if (head) {
+            // Efecto "ventana": la cámara sigue a la cabeza con mucha amplitud
+            want = { x: head.x * faceParallax, y: head.y * faceParallax * .7, z: -head.z * faceDolly };
+        } else {
+            if (touch) {
+                pointer.x = Math.sin(t / 4000) * .6;
+                pointer.y = Math.cos(t / 5300) * .4;
+            }
+            want = { x: pointer.x * parallax, y: -pointer.y * parallax * .6, z: 0 };
         }
-        cur.x += (pointer.x - cur.x) * .05;
-        cur.y += (pointer.y - cur.y) * .05;
-        camera.position.set(cur.x * parallax, -cur.y * parallax * .6, 0);
+        const k = head ? .15 : .05;
+        cur.x += (want.x - cur.x) * k;
+        cur.y += (want.y - cur.y) * k;
+        cur.z += (want.z - cur.z) * k;
+
+        const wantZoom = head ? faceZoom : zoom;
+        if (Math.abs(wantZoom - zoomCur) > .001) {
+            zoomCur += (wantZoom - zoomCur) * .05;
+            updateFov();
+        }
+
+        camera.position.set(cur.x, cur.y, cur.z);
         camera.lookAt(target);
         renderer.render(scene, camera);
     });
 
     splat.initialized.then(() => onReady()).catch(err => console.error('Splat:', err));
+
+    return {
+        // { x, y, z } desde face-track.js, o null para volver al mouse
+        setHead(h) { head = h; },
+    };
 }

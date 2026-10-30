@@ -12,6 +12,8 @@ export default {
     // 'video' usa solo los videos.
     background: 'splat',
     splatUrl: 'splat/cheto-full.ply', // generado con SHARP: solo para pruebas locales, no se versiona
+    faceTracking: true,      // botón "Cámara": mueve el fondo 3D siguiendo la cara por webcam (opt-in)
+    faceParallax: 6,         // amplitud de ese movimiento (más = más exagerado)
 
     // Video de fondo
     videoLayout: 'triptych', // 'single' (1 video 16:9) | 'triptych' (3 videos 9:16)

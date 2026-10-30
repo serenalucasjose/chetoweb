@@ -208,6 +208,8 @@ a[aria-disabled='true'] { cursor: default; }
     transform: scale(1.1);
 }
 
+.album-bg__blur.is-live-blur { filter: blur(28px) saturate(1.2); }
+
 // Oscurece el fondo difuminado (antes era brightness() en un filtro en vivo)
 .album-bg::before {
     content: '';

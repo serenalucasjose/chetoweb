@@ -33,7 +33,11 @@ function applyContent() {
     }
 
     $$('[data-album-art]').forEach(img => { img.src = config.albumArt; });
-    $$('[data-album-blur]').forEach(img => { img.src = config.albumArtBlur || config.albumArt; });
+    $$('[data-album-blur]').forEach(img => {
+        img.src = config.albumArtBlur || config.albumArt;
+        // Sin versión difuminada, se difumina en vivo (funciona, pero el hover es más pesado)
+        img.classList.toggle('is-live-blur', !config.albumArtBlur);
+    });
 
     const g = { suave: [.05, .25], medio: [.09, .5], fuerte: [.15, .85] }[config.effects] || [.09, .5];
     stage.style.setProperty('--grain', g[0]);

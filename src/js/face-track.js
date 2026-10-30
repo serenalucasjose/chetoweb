@@ -7,11 +7,18 @@ let detector = null;
 async function getDetector() {
     if (detector) return detector;
     const fileset = await FilesetResolver.forVisionTasks('mediapipe/wasm');
-    detector = await FaceDetector.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: 'models/blaze_face_short_range.tflite', delegate: 'GPU' },
+    const create = delegate => FaceDetector.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: 'models/blaze_face_short_range.tflite', delegate },
         runningMode: 'VIDEO',
         minDetectionConfidence: .5,
     });
+    // En algunos navegadores (Safari de iOS) la GPU puede fallar: se usa la CPU
+    try {
+        detector = await create('GPU');
+    } catch (err) {
+        console.warn('Detector de caras en GPU no disponible, uso CPU:', err);
+        detector = await create('CPU');
+    }
     return detector;
 }
 
@@ -24,11 +31,26 @@ export async function startFaceTracking(onHead) {
         video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false,
     });
+    // Safari de iOS solo decodifica el video de la cámara si está en la página
+    // y marcado como inline y mudo
     const video = document.createElement('video');
-    Object.assign(video, { srcObject: stream, muted: true, playsInline: true });
+    video.setAttribute('playsinline', '');
+    video.setAttribute('muted', '');
+    video.muted = true;
+    video.srcObject = stream;
+    Object.assign(video.style, { position: 'fixed', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none', left: '0', top: '0' });
+    document.body.appendChild(video);
     await video.play();
 
-    const det = await getDetector();
+    let det;
+    try {
+        det = await getDetector();
+    } catch (err) {
+        // Sin detector no tiene sentido dejar la cámara prendida
+        stream.getTracks().forEach(t => t.stop());
+        video.remove();
+        throw err;
+    }
     let running = true;
     let refWidth = null; // tamaño de la cara al empezar: referencia para la distancia
     let lastTime = -1;
@@ -62,5 +84,6 @@ export async function startFaceTracking(onHead) {
         running = false;
         stream.getTracks().forEach(t => t.stop());
         video.srcObject = null;
+        video.remove();
     };
 }

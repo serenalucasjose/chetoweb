@@ -301,6 +301,12 @@ let splatLoading = null;
 const splatModal = $('#splat-modal');
 const splatStatus = $('#splat-status');
 const isTouch = matchMedia('(hover: none)').matches;
+// Celulares y tablets. El iPad con teclado o trackpad dice tener mouse y se presenta
+// como Mac, pero sigue informando varios puntos táctiles.
+const isMobileDevice = isTouch || matchMedia('(pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+// Si un dispositivo se quedó sin memoria con el 3D, los próximos intentos usan la versión mínima
+const LITE_KEY = 'cheto-modo-3d-liviano';
+const SPLAT_TIMEOUT_MS = 45000;
 
 function setSplatStatus(text, state = '') {
     splatStatus.textContent = text;
@@ -312,17 +318,39 @@ function setSplatStatus(text, state = '') {
 // ?splat=full | mobile | lite fuerza una versión (para probar).
 function splatProfile() {
     const force = new URLSearchParams(location.search).get('splat');
-    const lowPower = force ? force !== 'full' : isTouch;
+    const lowPower = force ? force !== 'full' : isMobileDevice;
+    let preferLite = false;
+    try { preferLite = !!localStorage.getItem(LITE_KEY); } catch (e) { /* sin almacenamiento */ }
     const url = { full: config.splatUrl, mobile: config.splatUrlMobile, lite: config.splatUrlLite }[force]
+        || (lowPower && preferLite && config.splatUrlLite)
         || (lowPower && config.splatUrlMobile) || config.splatUrl;
     const lite = lowPower && config.splatUrlLite && url !== config.splatUrlLite ? config.splatUrlLite : null;
     return { lowPower, url, lite };
 }
 
+// Desarma el 3D (por ejemplo si iOS le quitó la memoria) para poder reintentar de cero
+function resetSplat(message) {
+    const wasActive = splatMode;
+    clearTimeout(splatTimer);
+    if (splatCtl) splatCtl.destroy();
+    splatCtl = null;
+    splatLoading = null;
+    if (wasActive) exitSplat();
+    setSplatStatus(message, 'error');
+    if (wasActive) splatModal.hidden = false;
+}
+
+let splatTimer = null;
+
 function loadSplat() {
     if (splatLoading) return splatLoading;
     const profile = splatProfile();
     setSplatStatus('Cargando escena 3D…', 'loading');
+    clearTimeout(splatTimer);
+    splatTimer = setTimeout(() => {
+        if (splatCtl && splatCtl.ready) return;
+        resetSplat('La escena 3D tardó demasiado. Tocá el símbolo para reintentar.');
+    }, SPLAT_TIMEOUT_MS);
     splatLoading = import(/* webpackChunkName: "splat" */ './splat-bg.js')
         .then(({ startSplatBackground }) => {
             splatCtl = startSplatBackground($('#bg'), {
@@ -335,19 +363,24 @@ function loadSplat() {
                 faceParallax: config.faceParallax,
                 onProgress: pct => setSplatStatus(`Cargando escena 3D… ${pct}%`, 'loading'),
                 onReady: () => {
+                    clearTimeout(splatTimer);
                     setSplatStatus('Escena lista', 'ready');
                     if (splatMode) showSplat();
                 },
-                onError: () => {
-                    setSplatStatus('No se pudo cargar la escena 3D', 'error');
-                    splatLoading = null;
+                onError: kind => {
+                    if (kind === 'context-lost') {
+                        // iOS suele hacer esto cuando se queda sin memoria
+                        try { localStorage.setItem(LITE_KEY, '1'); } catch (e) { /* idem */ }
+                        resetSplat('El dispositivo se quedó sin memoria. Tocá el símbolo para reintentar con una versión más liviana.');
+                    } else {
+                        resetSplat('No se pudo cargar la escena 3D. Tocá el símbolo para reintentar.');
+                    }
                 },
             });
         })
         .catch(err => {
             console.error('No se pudo cargar el modo 3D:', err);
-            setSplatStatus('No se pudo cargar la escena 3D', 'error');
-            splatLoading = null;
+            resetSplat('No se pudo cargar la escena 3D. Tocá el símbolo para reintentar.');
         });
     return splatLoading;
 }
@@ -412,13 +445,15 @@ function closeSplatModal() {
 let faceStop = null;
 const faceBtn = $('#face-toggle');
 
-const canUseCamera = () => !!(config.faceTracking && navigator.mediaDevices?.getUserMedia && !isTouch);
+// También en celulares y tablets (cámara frontal). Requiere HTTPS o localhost.
+const canUseCamera = () => !!(config.faceTracking && navigator.mediaDevices?.getUserMedia && window.isSecureContext);
 
 function setFaceState(state) {
     faceBtn.dataset.state = state;
     faceBtn.setAttribute('aria-pressed', state === 'on');
-    $('.btn__cam-label', faceBtn).textContent =
-        { off: 'Cámara', loading: 'Cámara…', on: 'Cámara on', error: 'Sin cámara' }[state];
+    const text = { off: 'Cámara', loading: 'Cámara…', on: 'Cámara on', error: 'Sin cámara' }[state];
+    $('.btn__cam-label', faceBtn).textContent = text;
+    faceBtn.setAttribute('aria-label', text); // en celulares el texto no se ve
 }
 
 function stopFace() {

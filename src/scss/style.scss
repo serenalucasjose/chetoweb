@@ -489,6 +489,7 @@ a[aria-disabled='true'] { cursor: default; }
     padding-bottom: max(var(--pad), env(safe-area-inset-bottom));
     display: grid;
     grid-template-rows: auto 1fr auto;
+    grid-template-columns: minmax(0, 1fr); // nada puede ensanchar la página más que la pantalla
 }
 
 .eyebrow {
@@ -521,6 +522,15 @@ a[aria-disabled='true'] { cursor: default; }
     justify-content: space-between;
     align-items: center;
     gap: 24px;
+
+    // Celulares: botones compactos para que entren los tres (cámara, remix, presskit)
+    @include mobile {
+        gap: 12px;
+
+        .top__actions { gap: 6px; }
+        .btn { padding: 12px; gap: 8px; letter-spacing: .14em; font-size: 11px; }
+        .btn__soon { display: none; }
+    }
 }
 
 .top__sign { height: clamp(44px, 9vh, 92px); width: auto; }
@@ -561,6 +571,11 @@ a[aria-disabled='true'] { cursor: default; }
 .btn__soon { font-size: 9px; letter-spacing: .2em; opacity: .8; }
 
 .btn--cam {
+    // En celulares el botón queda compacto: solo el punto
+    @include mobile {
+        .btn__cam-label { display: none; }
+    }
+
     .btn__cam-dot { width: 7px; height: 7px; background: rgba(240, 240, 240, .4); transition: background .25s; }
 
     &[data-state='on'] { border-color: $red; }

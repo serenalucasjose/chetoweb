@@ -133,6 +133,10 @@ a[aria-disabled='true'] { cursor: default; }
 
 .stage.is-splat-ready .bg__splat { opacity: 1; }
 
+// En celulares, con el 3D activo, el grano queda quieto: animarlo encima del canvas
+// obliga a recomponer toda la pantalla en cada salto
+.stage.is-touch.is-splat-ready .grain__tex { animation: none; }
+
 // Easter egg: el símbolo de la banda (arriba a la izquierda) activa el modo 3D.
 // Mientras no se descubrió, invita a hacer clic: punto rojo, onda y mini glitch.
 .sign { position: relative; line-height: 0; outline: none; }

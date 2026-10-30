@@ -19,6 +19,8 @@ export function startSplatBackground(container, opts) {
         onReady = () => {},
         onProgress = () => {},
         onError = () => {},
+        lowPower = false,  // celulares: menos resolución, 30 fps y menos reordenamientos
+        onSlow = null,     // se llama una vez si, ya cargado, va lento (para bajar de calidad)
     } = opts;
 
     const canvas = document.createElement('canvas');
@@ -26,21 +28,41 @@ export function startSplatBackground(container, opts) {
     container.appendChild(canvas);
 
     const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance' });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    // Los splats son difusos: en celulares renderizar a menos resolución casi no se nota
+    renderer.setPixelRatio(lowPower ? Math.min(window.devicePixelRatio, 1) : Math.min(window.devicePixelRatio, 1.5));
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0B0A0A);
     const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 2000);
-    scene.add(new SparkRenderer({ renderer }));
+    scene.add(new SparkRenderer({ renderer, ...(lowPower ? { minSortIntervalMs: 66 } : {}) }));
 
     // SHARP usa coordenadas OpenCV (y hacia abajo, z hacia adelante).
     // Girar 180° en X lo pasa a three.js: la escena queda delante de la cámara (-z).
-    const splat = new SplatMesh({
+    let splat = new SplatMesh({
         url,
         onProgress: e => { if (e.lengthComputable) onProgress(Math.round(e.loaded / e.total * 100)); },
     });
     splat.quaternion.set(1, 0, 0, 0);
     scene.add(splat);
+
+    // Medición de fluidez: después de cargar, mira ~2 s de frames; si la mediana
+    // supera 45 ms (menos de ~22 fps) avisa una sola vez con onSlow.
+    let perf = null;
+    let slowCb = onSlow;
+    function watchPerf() {
+        if (!slowCb) return;
+        perf = { start: performance.now() + 1000, deltas: [], last: null };
+    }
+    function trackPerf(t) {
+        if (!perf || t < perf.start) return;
+        if (perf.last !== null) perf.deltas.push(t - perf.last);
+        perf.last = t;
+        if (t - perf.start < 2000) return;
+        const d = perf.deltas.sort((a, b) => a - b);
+        const median = d[d.length >> 1] || 0;
+        perf = null;
+        if (median > 45 && slowCb) { const cb = slowCb; slowCb = null; cb(median); }
+    }
 
     // Encuadre tipo "cover": la foto llena la pantalla sin deformarse, como object-fit: cover.
     const halfV = Math.atan(PHOTO.h / 2 / PHOTO.focal);
@@ -77,7 +99,13 @@ export function startSplatBackground(container, opts) {
         pointer.y = (e.clientY / innerHeight - .5) * 2;
     });
 
+    // En celulares se dibuja como mucho a 30 fps: alcanza para un movimiento lento
+    const frameMs = lowPower ? 1000 / 30 - 2 : 0;
+    let lastFrame = -Infinity;
     const loop = t => {
+        trackPerf(t);
+        if (t - lastFrame < frameMs) return;
+        lastFrame = t;
         let want;
         if (head) {
             // Efecto "ventana": la cámara sigue a la cabeza con mucha amplitud
@@ -111,11 +139,21 @@ export function startSplatBackground(container, opts) {
         // { x, y, z } desde face-track.js, o null para volver al mouse
         setHead(h) { head = h; },
         // Al salir del modo 3D se deja de renderizar (no consume GPU)
-        pause() { renderer.setAnimationLoop(null); },
+        pause() { renderer.setAnimationLoop(null); perf = null; },
         resume() { renderer.setAnimationLoop(loop); },
+        // Reemplaza el splat por otro archivo (p. ej. uno más liviano) sin cortar el render
+        async load(newUrl) {
+            const next = new SplatMesh({ url: newUrl });
+            next.quaternion.set(1, 0, 0, 0);
+            await next.initialized;
+            scene.add(next);
+            scene.remove(splat);
+            splat.dispose();
+            splat = next;
+        },
     };
     splat.initialized
-        .then(() => { ctl.ready = true; onReady(); })
+        .then(() => { ctl.ready = true; onReady(); watchPerf(); })
         .catch(err => { console.error('Splat:', err); onError(err); });
     return ctl;
 }

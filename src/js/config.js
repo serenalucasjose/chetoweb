@@ -10,7 +10,9 @@ export default {
 
     // Modo 3D (easter egg): un clic en el logo cambia los videos por el gaussian splat.
     splatEasterEgg: true,
-    splatUrl: 'splat/cheto-full.spz', // generado con SHARP desde 1ST FULL.jpg y comprimido a SPZ
+    splatUrl: 'splat/cheto-full.spz', // generado con SHARP desde 1ST FULL.jpg y comprimido a SPZ (1,18 M gaussianas)
+    splatUrlMobile: 'splat/cheto-mobile.spz',    // pantallas táctiles: 350 mil gaussianas
+    splatUrlLite: 'splat/cheto-mobile-lite.spz', // si en mobile va lento, se cambia a esta: 200 mil
     faceTracking: true,      // botón "Cámara": mueve el fondo 3D siguiendo la cara por webcam (opt-in)
     faceParallax: 6,         // amplitud de ese movimiento (más = más exagerado)
 

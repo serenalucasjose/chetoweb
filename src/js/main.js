@@ -307,13 +307,31 @@ function setSplatStatus(text, state = '') {
     splatStatus.dataset.state = state;
 }
 
+// En pantallas táctiles (celulares, tablets) se usa un splat más liviano y un render
+// más barato; si aun así va lento, se pasa a la versión mínima.
+// ?splat=full | mobile | lite fuerza una versión (para probar).
+function splatProfile() {
+    const force = new URLSearchParams(location.search).get('splat');
+    const lowPower = force ? force !== 'full' : isTouch;
+    const url = { full: config.splatUrl, mobile: config.splatUrlMobile, lite: config.splatUrlLite }[force]
+        || (lowPower && config.splatUrlMobile) || config.splatUrl;
+    const lite = lowPower && config.splatUrlLite && url !== config.splatUrlLite ? config.splatUrlLite : null;
+    return { lowPower, url, lite };
+}
+
 function loadSplat() {
     if (splatLoading) return splatLoading;
+    const profile = splatProfile();
     setSplatStatus('Cargando escena 3D…', 'loading');
     splatLoading = import(/* webpackChunkName: "splat" */ './splat-bg.js')
         .then(({ startSplatBackground }) => {
             splatCtl = startSplatBackground($('#bg'), {
-                url: config.splatUrl,
+                url: profile.url,
+                lowPower: profile.lowPower,
+                onSlow: profile.lite ? ms => {
+                    console.info(`Modo 3D: ${Math.round(ms)} ms por frame, paso a la versión liviana`);
+                    splatCtl.load(profile.lite).catch(err => console.error('Splat liviano:', err));
+                } : null,
                 faceParallax: config.faceParallax,
                 onProgress: pct => setSplatStatus(`Cargando escena 3D… ${pct}%`, 'loading'),
                 onReady: () => {
